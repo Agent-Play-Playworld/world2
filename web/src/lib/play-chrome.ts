@@ -23,3 +23,9 @@ export const PLAY_TOUCH_KEYS: readonly PlayTouchKey[] = RAW_TOUCH_KEYS.map(
 export const PLAY_FOOTER_MENU: readonly PlayFooterMenuItem[] = RAW_FOOTER_MENU.map(
   (item) => PlayFooterMenuItemSchema.parse(item)
 );
+
+export const COMPACT_PLAY_CHROME_QUERY = "(max-width: 860px)";
+
+export const isCompactPlayChrome = (media: { matches: boolean } | null): boolean => {
+  return media?.matches === true;
+};

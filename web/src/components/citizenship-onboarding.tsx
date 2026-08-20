@@ -1,6 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { downloadCitizenshipCredentials } from "../lib/download-credentials";
 import {
+  INDUCTION_BRAND,
+  INDUCTION_GATES,
+  INDUCTION_NEXT,
+  INDUCTION_NEXT_CHECKING,
+  INDUCTION_NEXT_RESTORED,
+  INDUCTION_TRACK,
+  inductionStreetSrc,
+  recoveryKeyWords,
+} from "../lib/citizenship-induction";
+import {
   createHumanNode,
   createOccupancySession,
   loadOccupancyRootKey,
@@ -14,9 +24,13 @@ import {
   hashNodePassword,
   type DeriveNodeCredential,
 } from "../lib/node-credential";
-import { CitizenshipCredentialSchema } from "../schemas/citizenship";
-import { parseCitizenshipCredential } from "../lib/parse-citizenship";
+import {
+  inspectRestorePapers,
+  pickRestoreFile,
+  type InspectRestorePapersResult,
+} from "../lib/inspect-restore-papers";
 import { EnteredWorldSchema, type EnteredWorld } from "../schemas/entered-world";
+import type { InductionStepId } from "../schemas/citizenship-induction";
 
 const readUploadedText = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -30,8 +44,6 @@ const readUploadedText = (file: File): Promise<string> => {
     reader.readAsText(file);
   });
 };
-
-type OnboardingStep = "welcome" | "papers" | "restore" | "sealed";
 
 type SealedPapers = {
   nodeId: string;
@@ -55,7 +67,7 @@ export const CitizenshipOnboarding = (options: CitizenshipOnboardingProps) => {
     deriveCredential = credentialFromPhrase,
     onEnteredWorld,
   } = options;
-  const [step, setStep] = useState<OnboardingStep>("welcome");
+  const [step, setStep] = useState<InductionStepId>("welcome");
   const [phrase] = useState(generatePhrase);
   const [consent, setConsent] = useState(false);
   const [error, setError] = useState("");
@@ -64,7 +76,13 @@ export const CitizenshipOnboarding = (options: CitizenshipOnboardingProps) => {
   const [sealed, setSealed] = useState<SealedPapers | null>(null);
   const [backupReady, setBackupReady] = useState(false);
   const [restoreFile, setRestoreFile] = useState<File | null>(null);
+  const [restoreInspect, setRestoreInspect] =
+    useState<InspectRestorePapersResult | null>(null);
+  const [restoreHover, setRestoreHover] = useState(false);
   const sessionPromise = useRef<Promise<string> | null>(null);
+  const restoreTicket = useRef(0);
+  const restoreInput = useRef<HTMLInputElement | null>(null);
+  const words = recoveryKeyWords(phrase);
 
   useEffect(() => {
     const pending = createOccupancySession({
@@ -155,26 +173,32 @@ export const CitizenshipOnboarding = (options: CitizenshipOnboardingProps) => {
     }
   };
 
-  const onReconnect = async (): Promise<void> => {
+  const clearRestoreTray = (): void => {
+    restoreTicket.current += 1;
+    setRestoreFile(null);
+    setRestoreInspect(null);
+    setRestoreHover(false);
     setError("");
-    if (restoreFile === null) {
-      setError("Choose a credentials.json file first.");
-      return;
+    if (restoreInput.current !== null) {
+      restoreInput.current.value = "";
     }
+  };
+
+  const reconnectWithPapers = async (options: {
+    papers: Extract<InspectRestorePapersResult, { ok: true }>;
+    ticket: number;
+  }): Promise<void> => {
     setBusy(true);
+    setError("");
     try {
-      const text = await readUploadedText(restoreFile);
-      const json: unknown = JSON.parse(text);
-      const parsed = parseCitizenshipCredential(json, { occupancyOrigin });
-      if (!parsed.ok) {
-        throw new Error(parsed.reason);
+      const passwHash = await hashNodePassword(options.papers.passw);
+      if (options.ticket !== restoreTicket.current) {
+        return;
       }
-      const credential = CitizenshipCredentialSchema.parse(json);
-      const passwHash = await hashNodePassword(credential.passw);
       const validated = await validateMainNode({
         origin: occupancyOrigin,
         fetchFn,
-        nodeId: parsed.citizenship.nodeId,
+        nodeId: options.papers.preview.nodeId,
         passwHash,
       });
       if (!validated.ok) {
@@ -184,18 +208,61 @@ export const CitizenshipOnboarding = (options: CitizenshipOnboardingProps) => {
         throw new Error("Credentials are not for a main node on this server.");
       }
       const sessionId = await ensureSid();
+      if (options.ticket !== restoreTicket.current) {
+        return;
+      }
       setSid(sessionId);
       setSealed({
-        nodeId: parsed.citizenship.nodeId,
-        passw: credential.passw,
+        nodeId: options.papers.preview.nodeId,
+        passw: options.papers.passw,
         requireBackup: false,
       });
       setBackupReady(true);
       setStep("sealed");
     } catch (reason: unknown) {
+      if (options.ticket !== restoreTicket.current) {
+        return;
+      }
       setError(reason instanceof Error ? reason.message : "Restore failed");
     } finally {
-      setBusy(false);
+      if (options.ticket === restoreTicket.current) {
+        setBusy(false);
+      }
+    }
+  };
+
+  const onPapersChosen = async (file: File | null): Promise<void> => {
+    const ticket = restoreTicket.current + 1;
+    restoreTicket.current = ticket;
+    setRestoreFile(file);
+    setRestoreInspect(null);
+    setError("");
+    if (file === null) {
+      return;
+    }
+    try {
+      const text = await readUploadedText(file);
+      if (ticket !== restoreTicket.current) {
+        return;
+      }
+      const inspected = inspectRestorePapers({
+        text,
+        fileName: file.name,
+        occupancyOrigin,
+      });
+      setRestoreInspect(inspected);
+      if (!inspected.ok) {
+        setError(inspected.reason);
+        return;
+      }
+      await reconnectWithPapers({ papers: inspected, ticket });
+    } catch (reason: unknown) {
+      if (ticket !== restoreTicket.current) {
+        return;
+      }
+      setError(
+        reason instanceof Error ? reason.message : "Could not read credentials.json."
+      );
     }
   };
 
@@ -231,45 +298,79 @@ export const CitizenshipOnboarding = (options: CitizenshipOnboardingProps) => {
     }
   };
 
+  const nextCopy =
+    step === "restore" && busy
+      ? INDUCTION_NEXT_CHECKING
+      : step === "sealed" && sealed !== null && !sealed.requireBackup
+        ? INDUCTION_NEXT_RESTORED
+        : INDUCTION_NEXT[step];
+
   return (
-    <div className="human-onboard-overlay" data-citizenship-onboarding="1">
+    <div
+      className={`human-onboard-overlay is-${step}`}
+      data-citizenship-onboarding="1"
+    >
+      <div className="human-onboard-street" aria-hidden="true">
+        <img
+          className="human-onboard-street-still"
+          src={inductionStreetSrc(step)}
+          alt=""
+        />
+      </div>
+      <div className="human-onboard-glass" />
       <div className="human-onboard-stage">
-        <aside className="human-onboard-hero">
-          <p className="human-onboard-kicker">Citizen induction</p>
-          <p className="human-onboard-brand">v0peer</p>
-          <p className="human-onboard-hero-copy">
-            Claim citizenship before you enter the spatial AI agent metaverse.
-            Your Player ID unlocks wallet, agent talk, and Econext.
-          </p>
-        </aside>
+        <header className="human-onboard-mast">
+          <p className="human-onboard-kicker">Immigration desk</p>
+          <p className="human-onboard-brand">{INDUCTION_BRAND}</p>
+          <nav aria-label="Induction progress">
+            <ol className="human-onboard-track">
+              {INDUCTION_TRACK.map((stop) => {
+                const isCurrent = stop.steps.some((id) => id === step);
+                return (
+                  <li
+                    key={stop.id}
+                    className={
+                      isCurrent
+                        ? "human-onboard-track-stop is-current"
+                        : "human-onboard-track-stop"
+                    }
+                    aria-current={isCurrent ? "step" : undefined}
+                  >
+                    {stop.label}
+                  </li>
+                );
+              })}
+            </ol>
+          </nav>
+        </header>
         <section className="human-onboard-panel" aria-label="Citizenship">
+          <p className="human-onboard-now" role="status" aria-label="What to do now">
+            {nextCopy}
+          </p>
           {step === "welcome" ? (
             <>
               <h2 className="human-onboard-title">Become a citizen</h2>
               <p className="human-onboard-lead">
-                Citizenship is your ticket in. Issue papers once, keep your
-                recovery key, then enter the world to earn, talk, and bank.
+                The plaza is behind this glass. Papers first. Then the street
+                opens.
               </p>
-              <button
-                type="button"
-                className="human-onboard-link"
-                onClick={() => {
-                  setError("");
-                  setStep("restore");
-                }}
-              >
-                I already have credentials
-              </button>
-              <div className="human-onboard-actions">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setError("");
-                    setStep("papers");
-                  }}
-                >
-                  Start citizenship
-                </button>
+              <div className="human-onboard-doors">
+                {INDUCTION_GATES.map((gate) => (
+                  <button
+                    key={gate.id}
+                    type="button"
+                    className={`human-onboard-door human-onboard-door-${gate.id}`}
+                    aria-label={`${gate.title}. ${gate.action}`}
+                    onClick={() => {
+                      setError("");
+                      setStep(gate.id === "new" ? "papers" : "restore");
+                    }}
+                  >
+                    <span className="human-onboard-door-kicker">{gate.title}</span>
+                    <span className="human-onboard-door-action">{gate.action}</span>
+                    <span className="human-onboard-door-hint">{gate.hint}</span>
+                  </button>
+                ))}
               </div>
             </>
           ) : null}
@@ -277,19 +378,23 @@ export const CitizenshipOnboarding = (options: CitizenshipOnboardingProps) => {
             <>
               <h2 className="human-onboard-title">Issue your papers</h2>
               <p className="human-onboard-lead">
-                This creates your Player ID — the passport for wallet, agent
-                chat, and Econext banking.
+                This booklet is the only copy of your Player ID. Photograph it
+                with your eyes, then stamp.
               </p>
-              <button
-                type="button"
-                className="human-onboard-link"
-                onClick={() => {
-                  setError("");
-                  setStep("restore");
-                }}
-              >
-                Already a citizen? Restore papers
-              </button>
+              <article className="citizenship-passport" aria-label="Player passport">
+                <header className="citizenship-passport-head">
+                  <span>{INDUCTION_BRAND}</span>
+                  <span>World 2</span>
+                </header>
+                <ol className="citizenship-passport-words" aria-label="Recovery key">
+                  {words.map((word, index) => (
+                    <li key={`${word}-${String(index)}`}>
+                      <span>{String(index + 1).padStart(2, "0")}</span>
+                      {word}
+                    </li>
+                  ))}
+                </ol>
+              </article>
               <label className="human-onboard-consent">
                 <input
                   type="checkbox"
@@ -303,14 +408,7 @@ export const CitizenshipOnboarding = (options: CitizenshipOnboardingProps) => {
                   session.
                 </span>
               </label>
-              <p className="human-onboard-phrase-label">Recovery key</p>
-              <textarea
-                className="human-onboard-phrase"
-                readOnly
-                value={phrase}
-                aria-label="Recovery key"
-              />
-              <div className="human-onboard-actions">
+              <div className="human-onboard-actions human-onboard-dock">
                 <button
                   type="button"
                   disabled={busy}
@@ -320,6 +418,16 @@ export const CitizenshipOnboarding = (options: CitizenshipOnboardingProps) => {
                 >
                   Become a citizen
                 </button>
+                <button
+                  type="button"
+                  className="human-onboard-secondary"
+                  onClick={() => {
+                    setError("");
+                    setStep("welcome");
+                  }}
+                >
+                  Back to the doors
+                </button>
               </div>
             </>
           ) : null}
@@ -327,37 +435,95 @@ export const CitizenshipOnboarding = (options: CitizenshipOnboardingProps) => {
             <>
               <h2 className="human-onboard-title">Restore citizenship</h2>
               <p className="human-onboard-lead">
-                Upload credentials.json from a previous backup. We verify your
-                recovery key locally, then reconnect this tab.
+                Open the credentials.json you saved, or drop it on this tray. We
+                read it here, then check it with occupancy.
               </p>
-              <label className="human-onboard-file-zone">
-                <span>Upload credentials.json</span>
+              <div
+                className={
+                  restoreHover
+                    ? "human-onboard-file-zone is-hover"
+                    : "human-onboard-file-zone"
+                }
+                role="group"
+                aria-label="Restore papers tray"
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  setRestoreHover(true);
+                }}
+                onDragLeave={() => {
+                  setRestoreHover(false);
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  setRestoreHover(false);
+                  void onPapersChosen(pickRestoreFile(event.dataTransfer?.files));
+                }}
+              >
                 <input
+                  ref={restoreInput}
+                  id="restore-credentials"
+                  className="human-onboard-file-input"
                   type="file"
                   accept="application/json,.json"
-                  aria-label="Upload credentials.json"
+                  aria-label="Open credentials.json"
                   onChange={(event) => {
-                    setError("");
-                    setRestoreFile(event.target.files?.[0] ?? null);
+                    void onPapersChosen(pickRestoreFile(event.target.files));
                   }}
                 />
-              </label>
-              <div className="human-onboard-actions">
-                <button
-                  type="button"
-                  disabled={busy || restoreFile === null}
-                  onClick={() => {
-                    void onReconnect();
-                  }}
+                <label className="human-onboard-file-label" htmlFor="restore-credentials">
+                  <span className="human-onboard-file-kicker">Returning citizen</span>
+                  <span className="human-onboard-file-action">Open credentials.json</span>
+                  <span className="human-onboard-file-hint">
+                    {restoreFile === null
+                      ? "Or drop the file on this tray."
+                      : restoreFile.name}
+                  </span>
+                </label>
+              </div>
+              {restoreInspect !== null && restoreInspect.ok ? (
+                <p
+                  className="human-onboard-found"
+                  role="status"
+                  aria-label="Found papers"
                 >
-                  Reconnect
-                </button>
+                  {restoreInspect.preview.fileName} · {restoreInspect.preview.nodeId}
+                </p>
+              ) : null}
+              <div className="human-onboard-actions human-onboard-dock">
+                {restoreInspect !== null &&
+                restoreInspect.ok &&
+                error.length > 0 ? (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => {
+                      const papers = restoreInspect;
+                      if (papers === null || !papers.ok) {
+                        return;
+                      }
+                      void reconnectWithPapers({
+                        papers,
+                        ticket: restoreTicket.current,
+                      });
+                    }}
+                  >
+                    Try again
+                  </button>
+                ) : null}
+                {restoreFile !== null ? (
+                  <button
+                    type="button"
+                    className="human-onboard-secondary"
+                    onClick={clearRestoreTray}
+                  >
+                    Choose a different file
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   className="human-onboard-secondary"
                   onClick={() => {
-                    setError("");
-                    setRestoreFile(null);
+                    clearRestoreTray();
                     setStep("welcome");
                   }}
                 >
@@ -371,17 +537,31 @@ export const CitizenshipOnboarding = (options: CitizenshipOnboardingProps) => {
               <h2 className="human-onboard-title">Citizenship sealed</h2>
               <p className="human-onboard-lead">
                 {sealed.requireBackup
-                  ? "Download your papers before entering. Your recovery key is inside credentials.json."
-                  : "Your citizenship is restored for this tab."}
+                  ? "The stamp is down. Take the papers with you or this desk will forget you."
+                  : "The stamp remembers you. Walk in."}
               </p>
-              <p className="human-onboard-node-id">{sealed.nodeId}</p>
-              <div className="human-onboard-actions">
-                <button type="button" onClick={onDownload}>
-                  Download credentials.json
-                </button>
+              <article
+                className="citizenship-passport is-stamped"
+                aria-label="Player passport"
+              >
+                <header className="citizenship-passport-head">
+                  <span>{INDUCTION_BRAND}</span>
+                  <span>Sealed</span>
+                </header>
+                <p className="human-onboard-node-id">{sealed.nodeId}</p>
+                <span className="citizenship-stamp" aria-hidden="true">
+                  Admitted
+                </span>
+              </article>
+              <div className="human-onboard-actions human-onboard-dock">
+                {sealed.requireBackup ? (
+                  <button type="button" onClick={onDownload}>
+                    Download credentials.json
+                  </button>
+                ) : null}
                 <button
                   type="button"
-                  className="human-onboard-secondary"
+                  className="human-onboard-enter"
                   disabled={busy || (sealed.requireBackup && !backupReady)}
                   onClick={() => {
                     void onEnterWorld();
@@ -389,6 +569,15 @@ export const CitizenshipOnboarding = (options: CitizenshipOnboardingProps) => {
                 >
                   Enter world
                 </button>
+                {sealed.requireBackup ? null : (
+                  <button
+                    type="button"
+                    className="human-onboard-secondary"
+                    onClick={onDownload}
+                  >
+                    Download credentials.json
+                  </button>
+                )}
               </div>
             </>
           ) : null}

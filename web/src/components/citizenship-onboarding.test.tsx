@@ -1,9 +1,8 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { CitizenshipOnboarding } from "./citizenship-onboarding";
 import { getMockCitizenshipCredential } from "../test-support/factories";
-import type { OccupancyFetch } from "../lib/occupancy-client";
 
 const jsonResponse = (body: unknown, ok = true): Response => {
   return {
@@ -17,7 +16,7 @@ const jsonResponse = (body: unknown, ok = true): Response => {
 const PHRASE =
   "amber angle apple arch atlas aura autumn bamboo beacon birch";
 
-const createFetchFn = (): OccupancyFetch => {
+const createFetchFn = () => {
   return vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
     if (url.endsWith("/session")) {
@@ -39,7 +38,7 @@ const createFetchFn = (): OccupancyFetch => {
   });
 };
 
-const renderOnboarding = (fetchFn: OccupancyFetch) => {
+const renderOnboarding = (fetchFn: ReturnType<typeof createFetchFn>) => {
   const onEnteredWorld = vi.fn();
   render(
     <CitizenshipOnboarding
@@ -71,6 +70,18 @@ describe("v0peer citizenship onboarding", () => {
       screen.getByRole("button", { name: /i already have credentials/i })
     ).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: /game shell/i })).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("status", { name: /what to do now/i })
+    ).toHaveTextContent(/pick a door/i);
+    expect(screen.getByRole("button", { name: /i'm new/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /i've been here/i })
+    ).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: /induction progress/i })).toBeInTheDocument();
+    expect(document.querySelector(".human-onboard-street-still")).toHaveAttribute(
+      "src",
+      expect.stringContaining("community-world-plaza")
+    );
   });
 
   it("creates papers, downloads credentials, then enters the world", async () => {
@@ -81,6 +92,13 @@ describe("v0peer citizenship onboarding", () => {
     vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => undefined);
 
     await user.click(screen.getByRole("button", { name: /start citizenship/i }));
+    expect(
+      screen.getByRole("status", { name: /what to do now/i })
+    ).toHaveTextContent(/ten words/i);
+    expect(document.querySelector(".human-onboard-dock")).not.toBeNull();
+    expect(screen.getByRole("list", { name: /recovery key/i }).querySelectorAll("li")).toHaveLength(
+      10
+    );
     await user.click(
       screen.getByRole("checkbox", { name: /i agree to issue my player id/i })
     );
@@ -114,6 +132,9 @@ describe("v0peer citizenship onboarding", () => {
     await user.click(
       screen.getByRole("button", { name: /i already have credentials/i })
     );
+    expect(
+      screen.getByRole("status", { name: /what to do now/i })
+    ).toHaveTextContent(/drop/i);
     const file = new File(
       [
         JSON.stringify(
@@ -127,14 +148,16 @@ describe("v0peer citizenship onboarding", () => {
       { type: "application/json" }
     );
     await user.upload(
-      screen.getByLabelText(/upload credentials\.json/i),
+      screen.getByLabelText(/open credentials\.json/i),
       file
     );
-    await user.click(screen.getByRole("button", { name: /reconnect/i }));
 
     expect(
       await screen.findByRole("heading", { name: /citizenship sealed/i })
     ).toBeInTheDocument();
+    expect(screen.getByText("node-derived")).toBeInTheDocument();
+    expect(screen.queryByText(PHRASE)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /enter world/i })).toBeEnabled();
     await user.click(screen.getByRole("button", { name: /enter world/i }));
     await waitFor(() => {
       expect(onEnteredWorld).toHaveBeenCalledWith({
@@ -143,5 +166,103 @@ describe("v0peer citizenship onboarding", () => {
         snapshot: { worldMap: { occupants: [] } },
       });
     });
+  });
+
+  it("shows the found papers while occupancy checks them", async () => {
+    const user = userEvent.setup();
+    let release = (): void => undefined;
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const fetchFn = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/session")) {
+        return jsonResponse({ sid: "sid-local" });
+      }
+      if (url.endsWith("/nodes/validate")) {
+        await held;
+        return jsonResponse({ ok: true, nodeKind: "main" });
+      }
+      return jsonResponse({ error: "unknown" }, false);
+    });
+    renderOnboarding(fetchFn);
+    await user.click(
+      screen.getByRole("button", { name: /i already have credentials/i })
+    );
+    await user.upload(
+      screen.getByLabelText(/open credentials\.json/i),
+      new File(
+        [
+          JSON.stringify(
+            getMockCitizenshipCredential({
+              serverUrl: "http://localhost:3000",
+              nodeId: "node-derived",
+            })
+          ),
+        ],
+        "credentials.json",
+        { type: "application/json" }
+      )
+    );
+    expect(
+      await screen.findByRole("status", { name: /found papers/i })
+    ).toHaveTextContent("node-derived");
+    expect(
+      screen.getByRole("status", { name: /what to do now/i })
+    ).toHaveTextContent(/checking/i);
+    expect(screen.queryByText(PHRASE)).not.toBeInTheDocument();
+    release();
+    expect(
+      await screen.findByRole("heading", { name: /citizenship sealed/i })
+    ).toBeInTheDocument();
+  });
+
+  it("rejects a broken credentials file before calling occupancy", async () => {
+    const user = userEvent.setup();
+    const fetchFn = createFetchFn();
+    renderOnboarding(fetchFn);
+
+    await user.click(
+      screen.getByRole("button", { name: /i already have credentials/i })
+    );
+    await user.upload(
+      screen.getByLabelText(/open credentials\.json/i),
+      new File(["not json"], "credentials.json", { type: "application/json" })
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/json/i);
+    expect(
+      screen.queryByRole("heading", { name: /citizenship sealed/i })
+    ).not.toBeInTheDocument();
+    expect(
+      fetchFn.mock.calls.some(([input]) => String(input).includes("/nodes/validate"))
+    ).toBe(false);
+  });
+
+  it("accepts credentials.json dropped on the tray", async () => {
+    const user = userEvent.setup();
+    renderOnboarding(createFetchFn());
+    await user.click(
+      screen.getByRole("button", { name: /i already have credentials/i })
+    );
+    const tray = screen.getByRole("group", { name: /restore papers tray/i });
+    const file = new File(
+      [
+        JSON.stringify(
+          getMockCitizenshipCredential({
+            serverUrl: "http://localhost:3000",
+            nodeId: "node-derived",
+          })
+        ),
+      ],
+      "credentials.json",
+      { type: "application/json" }
+    );
+    fireEvent.drop(tray, {
+      dataTransfer: { files: [file] },
+    });
+    expect(
+      await screen.findByRole("heading", { name: /citizenship sealed/i })
+    ).toBeInTheDocument();
   });
 });

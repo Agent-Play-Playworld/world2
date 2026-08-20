@@ -1,8 +1,8 @@
 import type { ReactElement } from "react";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { GameShell } from "./game-shell";
 
 const renderShell = (ui: ReactElement): void => {
@@ -44,9 +44,43 @@ describe("Game shell", () => {
     expect(
       within(shell).queryByRole("button", { name: /^next$/i })
     ).not.toBeInTheDocument();
-    expect(
-      within(shell).queryByRole("heading", { name: /play the streets/i })
-    ).not.toBeInTheDocument();
+    expect(within(shell).getByRole("toolbar", { name: /play menu/i })).toBeInTheDocument();
+    expect(shell.querySelector(".play-chrome-hands")).not.toBeNull();
+    expect(shell.querySelector(".play-chrome-top")).not.toBeNull();
+  });
+
+  it("collapses messages and session on a compact play chrome", async () => {
+    const originalMatchMedia = window.matchMedia;
+    const user = userEvent.setup();
+    window.matchMedia = vi.fn().mockImplementation((query: string) => {
+      return {
+        matches: query.includes("max-width: 860px"),
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      };
+    });
+    try {
+      renderShell(<GameShell />);
+      const shell = screen.getByRole("region", { name: /game shell/i });
+      const messages = within(shell).getByRole("region", { name: /^messages$/i });
+      await waitFor(() => {
+        expect(messages.querySelector("details")).not.toHaveAttribute("open");
+      });
+      expect(
+        within(shell).getByRole("region", { name: /^session$/i }).querySelector("details")
+      ).not.toHaveAttribute("open");
+      await user.click(within(messages).getByText(/^messages$/i));
+      await waitFor(() => {
+        expect(messages.querySelector("details")).toHaveAttribute("open");
+      });
+    } finally {
+      window.matchMedia = originalMatchMedia;
+    }
   });
 
   it("hides the debug panel until the footer menu toggle is pressed", async () => {

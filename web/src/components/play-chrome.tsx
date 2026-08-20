@@ -1,5 +1,10 @@
-import { useState, type PointerEvent as ReactPointerEvent } from "react";
-import { PLAY_FOOTER_MENU, PLAY_TOUCH_KEYS } from "../lib/play-chrome";
+import { useEffect, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import {
+  COMPACT_PLAY_CHROME_QUERY,
+  PLAY_FOOTER_MENU,
+  PLAY_TOUCH_KEYS,
+  isCompactPlayChrome,
+} from "../lib/play-chrome";
 import { resolveOccupancyOrigin } from "../lib/occupancy-origin";
 
 type PlayChromeProps = {
@@ -9,14 +14,63 @@ type PlayChromeProps = {
   snapshot?: unknown;
 };
 
+type HudPanelId = "messages" | "session";
+
 const clampStick = (value: number, limit: number): number => {
   return Math.min(limit, Math.max(-limit, value));
+};
+
+const PlayHudPanel = (options: {
+  label: string;
+  className: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  children: ReactNode;
+}) => {
+  return (
+    <section className={`play-panel ${options.className}`} aria-label={options.label}>
+      <details
+        open={options.open}
+        onToggle={(event) => {
+          if (event.currentTarget.open !== options.open) {
+            options.onOpenChange(event.currentTarget.open);
+          }
+        }}
+      >
+        <summary className="play-panel-title">{options.label}</summary>
+        <div className="play-panel-body">{options.children}</div>
+      </details>
+    </section>
+  );
 };
 
 export const PlayChrome = (options: PlayChromeProps = {}) => {
   const occupancyOrigin = options.occupancyOrigin ?? resolveOccupancyOrigin();
   const [debugOpen, setDebugOpen] = useState(false);
   const [stick, setStick] = useState({ x: 0, y: 0 });
+  const [openPanels, setOpenPanels] = useState<Record<HudPanelId, boolean>>({
+    messages: true,
+    session: true,
+  });
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") {
+      return;
+    }
+    const media = window.matchMedia(COMPACT_PLAY_CHROME_QUERY);
+    const sync = (): void => {
+      const compact = isCompactPlayChrome(media);
+      setOpenPanels({
+        messages: !compact,
+        session: !compact,
+      });
+    };
+    sync();
+    media.addEventListener("change", sync);
+    return () => {
+      media.removeEventListener("change", sync);
+    };
+  }, []);
 
   const onPadPointer = (
     event: ReactPointerEvent<HTMLDivElement>,
@@ -37,79 +91,95 @@ export const PlayChrome = (options: PlayChromeProps = {}) => {
 
   return (
     <div className="play-chrome">
-      <section className="play-panel play-panel-messages" aria-label="Messages">
-        <p className="play-panel-title">Messages</p>
-        <p className="play-panel-body">No messages yet.</p>
-      </section>
-      <section className="play-panel play-panel-session" aria-label="Session">
-        <p className="play-panel-title">Session</p>
-        <p className="play-panel-body">
-          {options.nodeId === undefined
-            ? "World 2 play shell. The streets are empty."
-            : `Citizen ${options.nodeId.slice(0, 8)}`}
-        </p>
-      </section>
-      <div className="play-pad play-pad-center" role="group" aria-label="Play pad">
-        <span className="play-pad-label">Play Pad</span>
-        <div
-          className="play-pad-base"
-          onPointerDown={(event) => {
-            event.currentTarget.setPointerCapture(event.pointerId);
-            onPadPointer(event, true);
-          }}
-          onPointerMove={(event) => {
-            if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-              onPadPointer(event, true);
-            }
-          }}
-          onPointerUp={(event) => {
-            onPadPointer(event, false);
-          }}
-          onPointerCancel={(event) => {
-            onPadPointer(event, false);
+      <div className="play-chrome-top">
+        <PlayHudPanel
+          label="Messages"
+          className="play-panel-messages"
+          open={openPanels.messages}
+          onOpenChange={(open) => {
+            setOpenPanels((current) => ({ ...current, messages: open }));
           }}
         >
-          <span
-            className="play-pad-stick"
-            style={{
-              transform: `translate(${stick.x}px, ${stick.y}px)`,
+          <p>No messages yet.</p>
+        </PlayHudPanel>
+        <PlayHudPanel
+          label="Session"
+          className="play-panel-session"
+          open={openPanels.session}
+          onOpenChange={(open) => {
+            setOpenPanels((current) => ({ ...current, session: open }));
+          }}
+        >
+          <p>
+            {options.nodeId === undefined
+              ? "World 2 play shell. The streets are empty."
+              : `Citizen ${options.nodeId.slice(0, 8)}`}
+          </p>
+        </PlayHudPanel>
+      </div>
+      <div className="play-chrome-hands">
+        <div className="play-pad play-pad-center" role="group" aria-label="Play pad">
+          <span className="play-pad-label">Play Pad</span>
+          <div
+            className="play-pad-base"
+            onPointerDown={(event) => {
+              event.currentTarget.setPointerCapture(event.pointerId);
+              onPadPointer(event, true);
             }}
-          />
+            onPointerMove={(event) => {
+              if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                onPadPointer(event, true);
+              }
+            }}
+            onPointerUp={(event) => {
+              onPadPointer(event, false);
+            }}
+            onPointerCancel={(event) => {
+              onPadPointer(event, false);
+            }}
+          >
+            <span
+              className="play-pad-stick"
+              style={{
+                transform: `translate(${stick.x}px, ${stick.y}px)`,
+              }}
+            />
+          </div>
         </div>
-      </div>
-      <div
-        className="play-touch-pad play-touch-pad-cluster"
-        role="group"
-        aria-label="Touch pad"
-      >
-        {PLAY_TOUCH_KEYS.map((key) => (
-          <button
-            key={key.id}
-            type="button"
-            className={`play-touch-key play-touch-key-${key.id}`}
-            aria-label={key.label}
-          >
-            <span className="play-touch-letter">{key.letter}</span>
-            <span className="play-touch-label">{key.label}</span>
-          </button>
-        ))}
-      </div>
-      <div className="play-footer-menu" role="toolbar" aria-label="Play menu">
-        {PLAY_FOOTER_MENU.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className={
-              debugOpen ? "play-footer-menu-btn is-active" : "play-footer-menu-btn"
-            }
-            aria-pressed={debugOpen}
-            onClick={() => {
-              setDebugOpen((open) => !open);
-            }}
-          >
-            {item.label}
-          </button>
-        ))}
+        <div
+          className="play-touch-pad play-touch-pad-cluster"
+          role="group"
+          aria-label="Touch pad"
+        >
+          {PLAY_TOUCH_KEYS.map((key) => (
+            <button
+              key={key.id}
+              type="button"
+              className={`play-touch-key play-touch-key-${key.id}`}
+              aria-label={key.label}
+            >
+              <span className="play-touch-letter">{key.letter}</span>
+              <span className="play-touch-label">{key.label}</span>
+            </button>
+          ))}
+        </div>
+        <div className="play-footer-menu" role="toolbar" aria-label="Play menu">
+          {PLAY_FOOTER_MENU.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={
+                debugOpen ? "play-footer-menu-btn is-active" : "play-footer-menu-btn"
+              }
+              aria-pressed={debugOpen}
+              onClick={() => {
+                setDebugOpen((open) => !open);
+              }}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
       </div>
       {debugOpen ? (
         <aside className="play-debug-panel" role="complementary" aria-label="Debug panel">

@@ -1,5 +1,8 @@
 import { scrypt } from "@noble/hashes/scrypt.js";
 import { sha256 } from "@noble/hashes/sha2.js";
+import { PASSPHRASE_WORDS } from "./passphrase-words";
+
+export { PASSPHRASE_WORDS } from "./passphrase-words";
 
 const utf8 = new TextEncoder();
 
@@ -10,41 +13,6 @@ const NODE_ID_SCRYPT = {
   maxmem: 128 * 1024 * 1024,
   dkLen: 32,
 } as const;
-
-const PASSPHRASE_WORDS = [
-  "amber",
-  "angle",
-  "apple",
-  "arch",
-  "atlas",
-  "aura",
-  "autumn",
-  "bamboo",
-  "beacon",
-  "birch",
-  "cedar",
-  "cloud",
-  "copper",
-  "coral",
-  "dawn",
-  "ember",
-  "field",
-  "flint",
-  "grove",
-  "harbor",
-  "ivory",
-  "jade",
-  "lagoon",
-  "maple",
-  "meadow",
-  "nickel",
-  "olive",
-  "pearl",
-  "quartz",
-  "river",
-  "slate",
-  "willow",
-] as const;
 
 const bytesToHex = (bytes: Uint8Array): string => {
   return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
@@ -96,11 +64,20 @@ export const credentialFromPhrase: DeriveNodeCredential = async (options) => {
   return { phrase, passwHash, nodeId };
 };
 
+const pickPassphraseWord = (): string => {
+  const span = 0x100000000;
+  const length = PASSPHRASE_WORDS.length;
+  const limit = span - (span % length);
+  const bytes = new Uint32Array(1);
+  while (true) {
+    crypto.getRandomValues(bytes);
+    const value = bytes[0] ?? 0;
+    if (value < limit) {
+      return PASSPHRASE_WORDS[value % length] ?? "amber";
+    }
+  }
+};
+
 export const generateNodePassphrase = (wordCount = 10): string => {
-  const bytes = new Uint8Array(wordCount);
-  crypto.getRandomValues(bytes);
-  return Array.from(
-    bytes,
-    (byte) => PASSPHRASE_WORDS[byte % PASSPHRASE_WORDS.length] ?? "amber"
-  ).join(" ");
+  return Array.from({ length: wordCount }, () => pickPassphraseWord()).join(" ");
 };
