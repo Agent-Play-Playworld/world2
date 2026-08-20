@@ -5,6 +5,7 @@ import { SmoothScrollRoot } from "./components/smooth-scroll-root";
 import { AssetsPage } from "./pages/assets-page";
 import { CPage } from "./pages/c-page";
 import { DevelopersPage } from "./pages/developers-page";
+import { GameShellPage } from "./pages/game-shell-page";
 import { InterestPage } from "./pages/interest-page";
 import { LandingPage } from "./pages/landing-page";
 import { RustPage } from "./pages/rust-page";
@@ -20,6 +21,7 @@ export const App = () => {
         <Route path="/" element={<LandingPage />} />
         <Route path="/interest" element={<InterestPage />} />
         <Route path="/assets" element={<AssetsPage />} />
+        <Route path="/game-shell" element={<GameShellPage />} />
         <Route path="/developers" element={<DevelopersPage />} />
         <Route path="/webgl" element={<WebglPage />} />
         <Route path="/rust" element={<RustPage />} />

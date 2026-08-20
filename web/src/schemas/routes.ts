@@ -4,6 +4,7 @@ export const AppRouteIdSchema = z.enum([
   "landing",
   "interest",
   "assets",
+  "game-shell",
   "developers",
   "webgl",
   "rust",

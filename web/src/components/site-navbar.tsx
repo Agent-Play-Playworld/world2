@@ -21,7 +21,7 @@ export const SiteNavbar = () => {
   }, []);
 
   return (
-    <header className="site-header">
+    <header className="site-header site-header-overlay">
       <nav className="site-nav" aria-label="World 2" data-nav-root="true">
         <Link className="brand" to="/">
           World 2

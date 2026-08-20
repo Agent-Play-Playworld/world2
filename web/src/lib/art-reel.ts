@@ -62,6 +62,40 @@ export const ART_REEL_FRAMES: readonly ArtReelFrame[] = RAW_FRAMES.map((frame) =
   ArtReelFrameSchema.parse(frame)
 );
 
+const WORLD_MOVIE_FILES = [
+  "agent-play-sunny-park-world.png",
+  "agent-play-community-world-plaza.png",
+  "agent-play-legal-assistant-world.png",
+  "agent-play-phone-store-world.png",
+  "agent-play-city-that-carries-the-weight.png",
+  "agent-play-capacity-reaches-others.png",
+  "agent-play-come-out-earn-take-it-home.png",
+] as const;
+
+const WORLD_MOVIE_TITLES: Record<(typeof WORLD_MOVIE_FILES)[number], string> = {
+  "agent-play-sunny-park-world.png": "Come out",
+  "agent-play-community-world-plaza.png": "The plaza",
+  "agent-play-legal-assistant-world.png": "Share the street",
+  "agent-play-phone-store-world.png": "The shop",
+  "agent-play-city-that-carries-the-weight.png": "The city",
+  "agent-play-capacity-reaches-others.png": "Bring a friend",
+  "agent-play-come-out-earn-take-it-home.png": "Take it home",
+};
+
+export const WORLD_MOVIE_FRAMES: readonly ArtReelFrame[] = WORLD_MOVIE_FILES.map(
+  (file) => {
+    const source = ART_REEL_FRAMES.find((frame) => frame.file === file);
+    if (source === undefined) {
+      throw new Error(`World movie is missing ${file}`);
+    }
+    return ArtReelFrameSchema.parse({
+      file: source.file,
+      title: WORLD_MOVIE_TITLES[file],
+      caption: source.caption,
+    });
+  }
+);
+
 export const artRefPublicPath = (file: string): string => {
   return `/art/refs/${file}`;
 };

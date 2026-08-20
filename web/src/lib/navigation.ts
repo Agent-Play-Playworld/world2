@@ -7,7 +7,9 @@ const RAW_GROUPS: readonly NavGroup[] = [
     label: "Play",
     items: [
       { label: "Live world", href: GAME_SITE_HREF, external: true },
-      { label: "Opening reel", href: "/" },
+      { label: "World movie", href: "/" },
+      { label: "Game shell", href: "/game-shell" },
+      { label: "How money moves", href: "/#money-flow" },
     ],
   },
   {

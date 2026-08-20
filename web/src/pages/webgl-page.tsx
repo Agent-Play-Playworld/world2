@@ -9,7 +9,7 @@ export const WebglPage = () => {
       lead="The World 2 canvas is WebGL. Occupancy stays JSON from agent-play.com. You instance looks; you do not host the map."
     >
       <p>
-        Phase 1 is a ground plane, stand-ins, and a third-person camera. Kit GLBs
+        Phase 1 is a ground plane, stand-ins, and a third-person follow. Kit GLBs
         from png2glb dress those poses later. Read the occupancy OpenAPI, then
         draw.
       </p>

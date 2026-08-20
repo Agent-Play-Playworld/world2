@@ -7,13 +7,14 @@ describe("World 2 routes", () => {
     expect(landing?.id).toBe("landing");
   });
 
-  it("exposes the store, launch interest, and experience rooms", () => {
+  it("exposes the store, launch interest, game shell, and experience rooms", () => {
     const paths = APP_ROUTES.map((route) => route.path);
     expect(paths).toEqual(
       expect.arrayContaining([
         "/",
         "/interest",
         "/assets",
+        "/game-shell",
         "/developers",
         "/webgl",
         "/rust",

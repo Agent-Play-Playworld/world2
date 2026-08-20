@@ -12,12 +12,14 @@ describe("professional navigation", () => {
     ]);
   });
 
-  it("nests live world and opening reel under Play", () => {
+  it("nests live world, world movie, game shell, and money flow under Play", () => {
     const play = NAV_GROUPS.find((group) => group.id === "play");
     expect(play?.items).toEqual(
       expect.arrayContaining([
         { label: "Live world", href: GAME_SITE_HREF, external: true },
-        { label: "Opening reel", href: "/" },
+        { label: "World movie", href: "/" },
+        { label: "Game shell", href: "/game-shell" },
+        { label: "How money moves", href: "/#money-flow" },
       ])
     );
   });

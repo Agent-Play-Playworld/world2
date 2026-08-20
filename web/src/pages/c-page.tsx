@@ -9,8 +9,8 @@ export const CPage = () => {
     >
       <p>
         Bring the discipline: explicit memory, explicit frames. The live streets
-        still come from snapshot JSON. A C client would be another camera on the
-        same host, never a private map.
+        still come from snapshot JSON. A C client would be another World 2
+        presentation of the same host, never a private map.
       </p>
     </ExperienceLayout>
   );

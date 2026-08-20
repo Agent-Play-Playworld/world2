@@ -4,6 +4,7 @@ const RAW_ROUTES: readonly AppRoute[] = [
   { id: "landing", path: "/", label: "Opening reel" },
   { id: "interest", path: "/interest", label: "Register interest" },
   { id: "assets", path: "/assets", label: "Studio catalog" },
+  { id: "game-shell", path: "/game-shell", label: "Game shell" },
   { id: "developers", path: "/developers", label: "Overview" },
   { id: "webgl", path: "/webgl", label: "WebGL" },
   { id: "rust", path: "/rust", label: "Rust" },

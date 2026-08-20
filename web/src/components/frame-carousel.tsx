@@ -92,16 +92,16 @@ export const FrameCarousel = (options: FrameCarouselProps) => {
           );
         })}
       </div>
-      {variant !== "hero" ? (
+      {variant === "hero" ? null : (
         <div className="carousel-copy">
           <p className="reel-kicker">World 2</p>
           <h2>{active.title}</h2>
           <p>{active.caption}</p>
         </div>
-      ) : null}
+      )}
       <div className="carousel-controls">
         <button type="button" className="carousel-btn" onClick={() => go("prev")}>
-          Previous still
+          Previous
         </button>
         <div className="carousel-dots" role="tablist" aria-label={`${label} stills`}>
           {frames.map((frame, frameIndex) => (
@@ -123,7 +123,7 @@ export const FrameCarousel = (options: FrameCarouselProps) => {
           ))}
         </div>
         <button type="button" className="carousel-btn" onClick={() => go("next")}>
-          Next still
+          Next
         </button>
       </div>
     </section>

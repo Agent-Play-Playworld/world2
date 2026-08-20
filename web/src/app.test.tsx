@@ -16,26 +16,43 @@ const renderApp = (path: string): void => {
 };
 
 describe("World 2 landing", () => {
-  it("loads the cinematic landing by default", () => {
+  it("loads a quiet world movie over the full canvas", () => {
     renderApp("/");
     expect(
-      screen.getByRole("heading", { name: /come out with us/i })
+      screen.getByRole("heading", {
+        name: /the next ai agent and human interaction metaverse/i,
+      })
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /show interest in the game launch/i })
-    ).toBeInTheDocument();
+      screen.queryByText(/walk a live 3d world/i)
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/world 2 is the next camera/i)
+    ).not.toBeInTheDocument();
+    expect(screen.getAllByRole("region", { name: /world movie/i })).toHaveLength(
+      1
+    );
   });
 
-  it("plays art-ref stills in a story carousel", async () => {
+  it("plays composed world stills as a single movie", async () => {
     const user = userEvent.setup();
     renderApp("/");
-    const story = screen.getByRole("region", { name: /story reel/i });
-    expect(story).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: /come out/i })).toBeInTheDocument();
-    await user.click(within(story).getByRole("button", { name: /next still/i }));
-    expect(
-      screen.getByRole("img", { name: /walk with us/i })
-    ).toBeInTheDocument();
+    const movie = screen.getByRole("region", { name: /world movie/i });
+    expect(within(movie).getByRole("img", { name: /come out/i })).toBeInTheDocument();
+    await user.click(within(movie).getByRole("button", { name: /^next$/i }));
+    expect(within(movie).getByRole("img", { name: /the plaza/i })).toBeInTheDocument();
+    expect(within(movie).getByRole("button", { name: /^previous$/i })).toBeInTheDocument();
+  });
+
+  it("shows how money moves as its own section", () => {
+    renderApp("/");
+    const money = screen.getByRole("region", { name: /how money moves/i });
+    expect(within(money).getByText(/\$10 APW\$/)).toBeInTheDocument();
+    expect(within(money).getByText(/100 APU/i)).toBeInTheDocument();
+    expect(within(money).getByRole("link", { name: /econext/i })).toHaveAttribute(
+      "href",
+      "https://econext.llc"
+    );
   });
 
   it("links out to the live Agent Play world", async () => {
@@ -50,7 +67,25 @@ describe("World 2 landing", () => {
   });
 });
 
+describe("game shell page", () => {
+  it("hosts the reusable game UI on /game-shell", () => {
+    renderApp("/game-shell");
+    expect(screen.getByRole("region", { name: /game shell/i })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: /world movie/i })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: /play the streets/i })
+    ).not.toBeInTheDocument();
+  });
+});
+
 describe("World 2 chrome", () => {
+  it("keeps a translucent navbar over the world", () => {
+    renderApp("/");
+    const header = screen.getByRole("banner");
+    expect(header).toHaveClass("site-header-overlay");
+    expect(screen.getByRole("region", { name: /game shell/i })).toBeInTheDocument();
+  });
+
   it("shows professional nav groups with engineering sublinks", async () => {
     const user = userEvent.setup();
     renderApp("/");
