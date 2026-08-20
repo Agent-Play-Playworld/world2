@@ -1,6 +1,8 @@
 # World 2 design
 
-Presentation rules for a Godot 4 3D view of the existing 2D occupancy plane. Coordinates and kinds come from the host snapshot. Height, camera, and meshes are client-only.
+Presentation rules for a **browser 3D** view of the existing 2D occupancy plane. Coordinates and kinds come from the host snapshot. Height, camera, and meshes are client-only.
+
+Three.js and Godot 4 are both **Y-up**. Mapping is `(x, y) → (X, 0, Z)` in either engine. v1 uses the browser scene (Three.js / WebGL recommended). A later Godot native client would reuse the same mapping.
 
 ## 2D → 3D mapping
 
@@ -12,19 +14,19 @@ Agent Play world space is an axis-aligned rectangle in grid units (`WorldBounds`
 - Default X: 0–19
 - `DEFAULT_LAYOUT_BOUNDS_WITH_PARKING.maxY` is 9; play-ui also expands clamp/camera toward `MINIMUM_PLAY_WORLD_BOUNDS` (0–19, 0–19). World 2 must clamp locomotion to the **snapshot** `worldMap.bounds`, not a hardcoded rectangle.
 
-Occupant positions are `x` and `y` in that plane. Godot 4 is Y-up.
+Occupant positions are `x` and `y` in that plane.
 
-| Snapshot | Godot 3D |
-|----------|----------|
+| Snapshot | 3D scene (Y-up) |
+|----------|-----------------|
 | `x` | `position.x` |
 | `y` | `position.z` |
 | (none) | `position.y` = 0 on the ground plane |
 
 Call this mapping **`(x, y) → (X, 0, Z)`**. Inverse: world `x = X`, world `y = Z`.
 
-Do not rotate the plane so that snapshot `y` becomes Godot `Y`. That would fight gravity and camera.
+Do not rotate the plane so that snapshot `y` becomes scene `Y`. That would fight gravity and camera.
 
-**Scale.** One world unit is one Godot unit in v1 (treat as 1 m later if art needs it). Changing scale is a client constant, never a server field.
+**Scale.** One world unit is one scene unit in v1 (treat as 1 m later if art needs it). Changing scale is a client constant, never a server field.
 
 **Occupancy keys.** Server allocation uses quantized keys (`occupancyKeyForPosition`: round to 0.2 via multiplier 5, format `x,y` with 3 decimal places). Two durable occupants must not share a key. Local human locomotion in play-ui is continuous inside bounds; World 2 may interpolate visually but must not invent a second occupancy grid.
 
@@ -57,14 +59,16 @@ Kinds in Occupant Model v1 (plus legacy `mcp`):
 
 **Agents are stationary** at allocated cells. `world:journey` may carry a `path` of positioned steps for 2D preview animation. World 2 v1 may ignore journey paths or show a simple line; do not treat path playback as occupancy authority.
 
-**Local viewer.** play-ui uses `__human__` as the proximity `fromPlayerId`. The wallet and intercom actor is the restored **main node id**. World 2 should keep that split: pawn id `__human__`, credentialed actor = `credentials.json` `nodeId`.
+**Local viewer.** play-ui uses `__human__` as the proximity `fromPlayerId`. The wallet and intercom actor is the restored **main node id**. World 2 should keep that split: pawn id `__human__`, credentialed actor = `credentials.json` `nodeId` (Phase 2+).
+
+**Public URL.** `https://world2.v0peer.org` is **view-only by default**: session, snapshot, SSE, local walk. Credentials are not required to see the live map.
 
 **Interaction policy (host-enforced, client-mirrored):**
 
 - Humans see other humans.
 - Text H2H chat / assist / proximity actions: **disallowed**.
-- Human → agent assist / chat / zone / yield: **allowed** (`POST /proximity-action`).
-- Human enters arcade cabinets: **allowed**.
+- Human → agent assist / chat / zone / yield: **allowed** (`POST /proximity-action`) once identity exists.
+- Human enters arcade cabinets: **allowed** (later stages).
 - Peer voice: **opt-in** via `peerCallInvite` → Accept/Decline. Not `recordProximityAction`. Later phase.
 
 Proximity radii in play-ui (reuse, do not invent):
@@ -85,7 +89,7 @@ play-ui `StageId` values to preserve:
 - Arcade: `gameHiddenGems`, `gameMapRecall`, `gamePriceCheck`, `gameSignalHunt`, `gameDeliveryDash`, `gameLeaseLocker`, `gameTalkTimer`
 - `houseInterior`
 
-2D uses a Pixi stage stack with ease-out / ease-in. 3D uses **Godot scenes** (or additive rooms) with a camera + collision volumes. Stage is client presentation. Host RPCs that exist today:
+2D uses a Pixi stage stack with ease-out / ease-in. 3D uses **scenes** (or additive rooms) with a camera + collision volumes. Stage is client presentation. Host RPCs that exist today:
 
 - `enterSpace` — `{ playerId, structureId, spaceId? }` → transition payload; analytics + world transition event
 - `enterAmenity` — `{ playerId, spaceId, amenityKind }` — **audit log only**; persistence is the snapshot / amenity content
@@ -98,34 +102,42 @@ Esc / exit door in 2D returns to the previous stage. World 2 should do the same.
 
 ## Input
 
-| Context | 2D play-ui | World 2 desktop |
+Browser client. Keyboard focus is the 3D canvas at `/` on `world2.v0peer.org`. WASD remains the locomotion default (same as the superseded desktop plan).
+
+| Context | 2D play-ui | World 2 browser |
 |---------|------------|-----------------|
-| Locomotion | Joystick + arrow keys; pose saved in localStorage per `sid` | WASD + arrows; clamp with `clampWorldPosition`; optional local save |
-| Play Pad | **Shift+Ctrl** + `N` attach; `K`/`L`/`I`/`M` cardinals; two-letter diagonals (`MK`, `IL`, …) within 220 ms. Bare N/K/L/I/M do not move. | Same chord table when Play Pad HUD exists. Native app is not fighting browser `Ctrl+Shift+N`. Still require the chord so muscle memory matches. |
-| Enter space | `A` near structure | Confirm / `A` |
-| Enter amenity from yard | `P` on amenity pad | Confirm / `P` |
+| Locomotion | Joystick + arrow keys; pose saved in localStorage per `sid` | WASD + arrows while the canvas is focused; clamp with `clampWorldPosition`; optional localStorage save |
+| Play Pad | **Shift+Ctrl** + `N` attach; `K`/`L`/`I`/`M` cardinals; two-letter diagonals (`MK`, `IL`, …) within 220 ms. Bare N/K/L/I/M do not move. | Same chord table when Play Pad HUD exists. Some browsers intercept `Ctrl+Shift+N` (new window / incognito). Document that; do not invent a different chord for v1. |
+| Pointer lock | Not used | **Optional later** for mouse-look. Phase 1: no pointer lock; camera follows the pawn. Click-to-focus the canvas is enough. |
+| Enter space | `A` near structure | Confirm / `A` (later) |
+| Enter amenity from yard | `P` on amenity pad | Confirm / `P` (later) |
 | Assist / Chat / Zone / Yield | `A` `C` `Z` `Y` near **agent** | Same keys later; members beat objects |
 | Push-to-talk | `P` near agent | Later |
-| Back | `Esc` | `Esc` |
+| Back | `Esc` | `Esc` (also exits pointer lock if that ships later) |
 
 Phase 1 only needs locomotion + camera. Do not bind proximity mutations until the protocol client can POST them behind tests.
 
+Do not steal scrolling or browser chrome: listen for keys on the canvas (or a dedicated game layer), not `window` for every key.
+
 ## Camera
 
-v1: **third-person follow** of the local human pawn, looking at the ground plane, orthographic or mild perspective. Keep the three street columns and parking band readable from above-behind.
+v1: **third-person follow** of the local human pawn, looking at the ground plane (XZ), orthographic or mild perspective. Keep the three street columns and parking band readable from above-behind.
 
-Do not use Godot multiplayer cameras or `MultiplayerSynchronizer`. Other humans (when present in `occupants` or, later, geography) are snapshot/mesh data, not Godot peers.
+Do not use a multiplayer camera rig or peer-synced transforms. Other humans (when present in `occupants` or, later, geography) are snapshot/mesh data, not engine peers.
+
+Pointer-lock first-person is out of Phase 1.
 
 ## HUD
 
 v1:
 
-- Connection: origin, `sid` prefix only, snapshot `rev` if present
+- Connection: page origin (`world2.v0peer.org`), API origin (`world1.v0peer.org`), `sid` prefix only, snapshot `rev` if present
 - Occupant counts by kind
-- Error line (see failure modes)
+- Mode: view-only
+- Error line (see failure modes), including CORS failures
 - Optional occupant name labels in world space
 
-Later: wallet APW$ / APU, proximity prompt, Play Pad, arcade result, peer-call Accept/Decline.
+Later: wallet APW$ / APU, proximity prompt, Play Pad, arcade result, peer-call Accept/Decline, credentials restore.
 
 AQL does not appear in this HUD.
 
@@ -133,19 +145,25 @@ AQL does not appear in this HUD.
 
 ### Wrong origin
 
-`credentials.json` has `serverUrl`. Restore must compare a canonical host:
+API origin is **not** the page origin. Default API host is `https://world1.v0peer.org`. `credentials.json` (Phase 2+) has `serverUrl`. Restore must compare a canonical host:
 
 - `world1.v0peer.org` is Main World
 - `agent-play.com`, `www.agent-play.com`, `playworld.world` **are the same deployment** (legacy names)
+- `world2.v0peer.org` is the **3D page**, never the occupancy API
 
-If the file is for some other host, refuse restore and show both URLs. Do not silently POST hashed credentials at the wrong origin.
+If the file is for some other host, refuse restore and show both URLs. Do not silently POST hashed credentials at the wrong origin. Do not send occupancy RPC to `world2.v0peer.org`.
 
-Default World 2 origin is `https://world1.v0peer.org`. Override is an explicit settings value, not inferred from a random last-used URL.
+Override is an explicit settings / env value (`VITE_WORLD2_API_BASE`), not inferred from `window.location`.
+
+### CORS / blocked cross-origin
+
+If session, RPC, or EventSource fails because the host lacks `Access-Control-Allow-Origin` for `https://world2.v0peer.org`, show a concrete HUD error: 3D page origin vs API origin, not a generic “offline”. See [architecture.md](architecture.md) and [world-protocol.md](world-protocol.md).
 
 ### Lost credentials
 
-- View-only: session + snapshot + SSE still work (play-ui watch path does not require node headers for those reads).
-- Mutations that need a main node (`purchase`, `getPlayerWallet` as that player, talk, house/parking buys) fail until `credentials.json` is loaded.
+- View-only: session + snapshot + SSE still work (play-ui watch path does not require node headers for those reads). This is the **default** for the public URL.
+- Mutations that need a main node (`purchase`, `getPlayerWallet` as that player, talk, house/parking buys) fail until credentials are loaded (Phase 2+).
+- Browser restore is a file picker / stored JSON, not a desktop path to `~/.agent-play/credentials.json`.
 - Passphrase is 10 words. World 2 hashes locally; the server compares `x-node-passw` as already-hashed material and does not re-hash the header.
 - Losing the phrase means losing that node. HUD copy should say that without offering a recovery backdoor.
 
@@ -155,6 +173,7 @@ Default World 2 origin is `https://world1.v0peer.org`. Override is an explicit s
 - On drop: close the stream, backoff reconnect to `GET /events?sid=`, then **full `getWorldSnapshot`** before trusting incremental notify again.
 - If `sid` is rejected (403), re-fetch `GET /session` and replace local sid (Main World sid can be reconciled the same way play-ui `ensurePreviewSessionId` does).
 - Parse failure of an event `data` line: refetch snapshot (play-ui already does this).
+- Native `EventSource` reconnection is browser-dependent (`../agent-play/docs/third-party-and-sharp-edges.md`). World 2 should still do an explicit snapshot refetch after reconnect, not rely on the browser alone.
 
 ### Snapshot / merge failure
 
@@ -164,4 +183,4 @@ Default World 2 origin is `https://world1.v0peer.org`. Override is an explicit s
 
 ### Identity mismatch
 
-`POST /api/nodes/validate` with `x-node-id` / `x-node-passw`. Body `nodeId` must match the header. Wrong kind (agent node used as main) is a 403-class failure on privileged routes. Show “this file is not a main node” rather than retry loops.
+`POST /api/nodes/validate` with `x-node-id` / `x-node-passw`. Body `nodeId` must match the header. Wrong kind (agent node used as main) is a 403-class failure on privileged routes. Show “this file is not a main node” rather than retry loops. Not Phase 1.
