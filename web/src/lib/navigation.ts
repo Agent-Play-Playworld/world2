@@ -1,61 +1,24 @@
-import { GAME_SITE_HREF } from "./origins";
-import { NavGroupSchema, type NavGroup } from "../schemas/navigation";
+import { ECONEXT_HREF } from "./origins";
+import { NavLinkSchema, type NavLink } from "../schemas/navigation";
 
-const RAW_GROUPS: readonly NavGroup[] = [
-  {
-    id: "play",
-    label: "Play",
-    items: [
-      { label: "Live world", href: GAME_SITE_HREF, external: true },
-      { label: "World movie", href: "/" },
-      { label: "Game shell", href: "/game-shell" },
-      { label: "How money moves", href: "/#money-flow" },
-    ],
-  },
-  {
-    id: "launch",
-    label: "Launch",
-    items: [{ label: "Register interest", href: "/interest" }],
-  },
-  {
-    id: "citizens",
-    label: "Citizens",
-    items: [
-      { label: "Studio catalog", href: "/assets" },
-      { label: "Avatar set", href: "/assets#avatar-set" },
-      { label: "Inks", href: "/assets#inks" },
-    ],
-  },
-  {
-    id: "engineering",
-    label: "Engineering",
-    items: [
-      { label: "Overview", href: "/developers" },
-      { label: "WebGL", href: "/webgl" },
-      { label: "Rust", href: "/rust" },
-      { label: "Native C", href: "/c" },
-      { label: "Visage", href: "/visage" },
-    ],
-  },
+const RAW_LINKS: readonly NavLink[] = [
+  { id: "play", label: "Play", href: "/game-shell" },
+  { id: "banking", label: "Banking", href: ECONEXT_HREF, external: true },
 ];
 
-export const NAV_GROUPS: readonly NavGroup[] = RAW_GROUPS.map((group) => {
-  const parsed = NavGroupSchema.parse(group);
+export const NAV_LINKS: readonly NavLink[] = RAW_LINKS.map((link) => {
+  const parsed = NavLinkSchema.parse(link);
+  if (parsed.external === true) {
+    return {
+      id: parsed.id,
+      label: parsed.label,
+      href: parsed.href,
+      external: true,
+    };
+  }
   return {
     id: parsed.id,
     label: parsed.label,
-    items: parsed.items.map((item) => {
-      if (item.external === true) {
-        return {
-          label: item.label,
-          href: item.href,
-          external: true,
-        };
-      }
-      return {
-        label: item.label,
-        href: item.href,
-      };
-    }),
+    href: parsed.href,
   };
 });

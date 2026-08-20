@@ -82,15 +82,18 @@ describe("World 2 landing", () => {
     );
   });
 
-  it("links out to the live Agent Play world", async () => {
-    const user = userEvent.setup();
+  it("links Play to the game shell and Banking to Econext", () => {
     renderApp("/");
-    await user.hover(screen.getByRole("button", { name: /^play$/i }));
-    const liveWorld = screen.getAllByRole("link", { name: /live world/i });
-    expect(liveWorld.length).toBeGreaterThan(0);
-    for (const link of liveWorld) {
-      expect(link).toHaveAttribute("href", "https://agent-play.com");
-    }
+    const nav = screen.getByRole("navigation", { name: /world 2/i });
+    expect(within(nav).getByRole("link", { name: /^play$/i })).toHaveAttribute(
+      "href",
+      "/game-shell"
+    );
+    expect(within(nav).getByRole("link", { name: /^banking$/i })).toHaveAttribute(
+      "href",
+      "https://econext.llc"
+    );
+    expect(within(nav).queryByRole("button")).not.toBeInTheDocument();
   });
 });
 
@@ -113,30 +116,13 @@ describe("World 2 chrome", () => {
     expect(screen.getByRole("region", { name: /world 2 opening/i })).toBeInTheDocument();
   });
 
-  it("shows professional nav groups with engineering sublinks", async () => {
-    const user = userEvent.setup();
+  it("shows Play and Banking in the navbar", () => {
     renderApp("/");
-    expect(screen.getByRole("navigation", { name: /world 2/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^play$/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^launch$/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^citizens$/i })).toBeInTheDocument();
-    await user.hover(screen.getByRole("button", { name: /^engineering$/i }));
-    expect(screen.getByRole("link", { name: /^webgl$/i })).toHaveAttribute(
-      "href",
-      "/webgl"
-    );
-    expect(screen.getByRole("link", { name: /^rust$/i })).toHaveAttribute(
-      "href",
-      "/rust"
-    );
-    expect(screen.getByRole("link", { name: /native c/i })).toHaveAttribute(
-      "href",
-      "/c"
-    );
-    expect(screen.getByRole("link", { name: /^visage$/i })).toHaveAttribute(
-      "href",
-      "/visage"
-    );
+    const nav = screen.getByRole("navigation", { name: /world 2/i });
+    expect(within(nav).getByRole("link", { name: /^play$/i })).toBeInTheDocument();
+    expect(within(nav).getByRole("link", { name: /^banking$/i })).toBeInTheDocument();
+    expect(within(nav).queryByRole("link", { name: /^launch$/i })).not.toBeInTheDocument();
+    expect(within(nav).queryByRole("button", { name: /^engineering$/i })).not.toBeInTheDocument();
   });
 });
 
