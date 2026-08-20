@@ -1,8 +1,9 @@
 import { OccupancyServerUrlSchema } from "../schemas/occupancy-server-url";
+import { resolveOccupancyOrigin } from "./occupancy-origin";
 import { CANONICAL_OCCUPANCY_ORIGIN } from "./origins";
 
 export type CanonicalizeServerUrlResult =
-  | { ok: true; serverUrl: typeof CANONICAL_OCCUPANCY_ORIGIN }
+  | { ok: true; serverUrl: string }
   | { ok: false; reason: string };
 
 const OCCUPANCY_ALIAS_HOSTS = new Set([
@@ -15,8 +16,13 @@ const hostnameWithoutWww = (hostname: string): string => {
   return hostname.toLowerCase().replace(/^www\./, "");
 };
 
+type CanonicalizeServerUrlOptions = {
+  occupancyOrigin?: string | undefined;
+};
+
 export const canonicalizeOccupancyServerUrl = (
-  rawUrl: string
+  rawUrl: string,
+  options: CanonicalizeServerUrlOptions = {}
 ): CanonicalizeServerUrlResult => {
   const parsedUrl = OccupancyServerUrlSchema.safeParse(rawUrl.trim());
   if (!parsedUrl.success) {
@@ -29,6 +35,9 @@ export const canonicalizeOccupancyServerUrl = (
   try {
     const parsed = new URL(parsedUrl.data);
     const hostname = hostnameWithoutWww(parsed.hostname);
+    const occupancyOrigin =
+      options.occupancyOrigin ?? resolveOccupancyOrigin();
+    const occupancyHost = hostnameWithoutWww(new URL(occupancyOrigin).hostname);
 
     if (
       /^world\d+\.v0peer\.org$/u.test(hostname) &&
@@ -41,7 +50,15 @@ export const canonicalizeOccupancyServerUrl = (
       };
     }
 
-    if (!OCCUPANCY_ALIAS_HOSTS.has(hostname)) {
+    if (hostname === occupancyHost) {
+      return { ok: true, serverUrl: occupancyOrigin.replace(/\/$/, "") };
+    }
+
+    const occupancyUsesProductionAliases = OCCUPANCY_ALIAS_HOSTS.has(
+      occupancyHost
+    );
+
+    if (!occupancyUsesProductionAliases || !OCCUPANCY_ALIAS_HOSTS.has(hostname)) {
       return {
         ok: false,
         reason: `credentials.json is for a different server (${rawUrl.trim()}).`,

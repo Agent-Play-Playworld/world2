@@ -9,8 +9,13 @@ export type ParseCitizenshipResult =
   | { ok: true; citizenship: AcceptedCitizenship }
   | { ok: false; reason: string };
 
+type ParseCitizenshipOptions = {
+  occupancyOrigin?: string | undefined;
+};
+
 export const parseCitizenshipCredential = (
-  json: unknown
+  json: unknown,
+  options: ParseCitizenshipOptions = {}
 ): ParseCitizenshipResult => {
   const parsed = CitizenshipCredentialSchema.safeParse(json);
   if (!parsed.success) {
@@ -20,7 +25,9 @@ export const parseCitizenshipCredential = (
     };
   }
 
-  const server = canonicalizeOccupancyServerUrl(parsed.data.serverUrl);
+  const server = canonicalizeOccupancyServerUrl(parsed.data.serverUrl, {
+    occupancyOrigin: options.occupancyOrigin,
+  });
   if (!server.ok) {
     return { ok: false, reason: server.reason };
   }

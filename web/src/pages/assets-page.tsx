@@ -1,7 +1,7 @@
 import { useState, type ChangeEvent } from "react";
 import { parseCitizenshipCredential } from "../lib/parse-citizenship";
 import { purchaseStoreItem, STORE_CATALOG } from "../lib/store-purchase";
-import { ECONEXT_HREF } from "../lib/origins";
+import { CANONICAL_OCCUPANCY_ORIGIN, ECONEXT_HREF } from "../lib/origins";
 import type { AcceptedCitizenship } from "../schemas/citizenship";
 import type { StoreItem } from "../schemas/store";
 
@@ -33,7 +33,9 @@ export const AssetsPage = () => {
     }
     try {
       const parsedJson: unknown = JSON.parse(await file.text());
-      const parsed = parseCitizenshipCredential(parsedJson);
+      const parsed = parseCitizenshipCredential(parsedJson, {
+        occupancyOrigin: CANONICAL_OCCUPANCY_ORIGIN,
+      });
       if (!parsed.ok) {
         setCitizenship(null);
         setNotice({ kind: "error", message: parsed.reason });

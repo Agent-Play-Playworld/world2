@@ -20,7 +20,7 @@ export type CitizenshipCredential = z.infer<typeof CitizenshipCredentialSchema>;
 
 export const AcceptedCitizenshipSchema = z.object({
   nodeId: z.string().min(1),
-  serverUrl: z.literal("https://agent-play.com"),
+  serverUrl: z.string().url(),
 });
 
 export type AcceptedCitizenship = z.infer<typeof AcceptedCitizenshipSchema>;

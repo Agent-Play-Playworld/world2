@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 import { getMockCitizenshipCredential } from "../test-support/factories";
 import { parseCitizenshipCredential } from "./parse-citizenship";
 
+const PRODUCTION_OCCUPANCY = { occupancyOrigin: "https://agent-play.com" };
+
 describe("citizenship credential upload", () => {
   it("accepts a credentials.json citizen file for agent-play.com", () => {
     const file = getMockCitizenshipCredential();
-    const result = parseCitizenshipCredential(file);
+    const result = parseCitizenshipCredential(file, PRODUCTION_OCCUPANCY);
 
     expect(result).toEqual({
       ok: true,
@@ -17,7 +19,10 @@ describe("citizenship credential upload", () => {
   });
 
   it("does not keep the passphrase after a successful parse", () => {
-    const result = parseCitizenshipCredential(getMockCitizenshipCredential());
+    const result = parseCitizenshipCredential(
+      getMockCitizenshipCredential(),
+      PRODUCTION_OCCUPANCY
+    );
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.citizenship).not.toHaveProperty("passw");
@@ -28,7 +33,8 @@ describe("citizenship credential upload", () => {
     const result = parseCitizenshipCredential(
       getMockCitizenshipCredential({
         serverUrl: "https://world1.v0peer.org",
-      })
+      }),
+      PRODUCTION_OCCUPANCY
     );
 
     expect(result).toEqual({
@@ -51,6 +57,23 @@ describe("citizenship credential upload", () => {
     if (!result.ok) {
       expect(result.reason).toMatch(/page origin/i);
     }
+  });
+
+  it("accepts localhost occupancy papers when that host is configured", () => {
+    const result = parseCitizenshipCredential(
+      getMockCitizenshipCredential({
+        serverUrl: "http://localhost:3000",
+      }),
+      { occupancyOrigin: "http://localhost:3000" }
+    );
+
+    expect(result).toEqual({
+      ok: true,
+      citizenship: {
+        nodeId: "citizen-node-fixture",
+        serverUrl: "http://localhost:3000",
+      },
+    });
   });
 
   it("rejects a file that is not credentials.json", () => {

@@ -1,6 +1,5 @@
 import { Route, Routes } from "react-router-dom";
-import { CustomCursor } from "./components/custom-cursor";
-import { SiteNavbar } from "./components/site-navbar";
+import { SiteChrome } from "./components/site-chrome";
 import { SmoothScrollRoot } from "./components/smooth-scroll-root";
 import { AssetsPage } from "./pages/assets-page";
 import { CPage } from "./pages/c-page";
@@ -15,8 +14,7 @@ import { WebglPage } from "./pages/webgl-page";
 export const App = () => {
   return (
     <SmoothScrollRoot>
-      <CustomCursor />
-      <SiteNavbar />
+      <SiteChrome />
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/interest" element={<InterestPage />} />

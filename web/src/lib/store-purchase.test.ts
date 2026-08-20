@@ -8,7 +8,9 @@ import {
 } from "./store-purchase";
 
 const citizenshipFromFixture = () => {
-  const parsed = parseCitizenshipCredential(getMockCitizenshipCredential());
+  const parsed = parseCitizenshipCredential(getMockCitizenshipCredential(), {
+    occupancyOrigin: "https://agent-play.com",
+  });
   if (!parsed.ok) {
     throw new Error("fixture citizenship must parse");
   }

@@ -3,7 +3,9 @@ import { canonicalizeOccupancyServerUrl } from "./canonicalize-server-url";
 
 describe("occupancy serverUrl canonicalization", () => {
   it("keeps agent-play.com", () => {
-    const result = canonicalizeOccupancyServerUrl("https://agent-play.com");
+    const result = canonicalizeOccupancyServerUrl("https://agent-play.com", {
+      occupancyOrigin: "https://agent-play.com",
+    });
     expect(result).toEqual({
       ok: true,
       serverUrl: "https://agent-play.com",
@@ -18,12 +20,31 @@ describe("occupancy serverUrl canonicalization", () => {
     ];
 
     for (const alias of aliases) {
-      const result = canonicalizeOccupancyServerUrl(alias);
+      const result = canonicalizeOccupancyServerUrl(alias, {
+        occupancyOrigin: "https://agent-play.com",
+      });
       expect(result).toEqual({
         ok: true,
         serverUrl: "https://agent-play.com",
       });
     }
+  });
+
+  it("accepts localhost occupancy when that is the configured host", () => {
+    const result = canonicalizeOccupancyServerUrl("http://localhost:3000", {
+      occupancyOrigin: "http://localhost:3000",
+    });
+    expect(result).toEqual({
+      ok: true,
+      serverUrl: "http://localhost:3000",
+    });
+  });
+
+  it("rejects production credentials against a localhost occupancy", () => {
+    const result = canonicalizeOccupancyServerUrl("https://agent-play.com", {
+      occupancyOrigin: "http://localhost:3000",
+    });
+    expect(result.ok).toBe(false);
   });
 
   it("rejects world2 and worldN page origins as serverUrl", () => {

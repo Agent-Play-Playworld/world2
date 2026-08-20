@@ -98,10 +98,19 @@ describe("World 2 landing", () => {
 });
 
 describe("game shell page", () => {
-  it("hosts the reusable game UI on /game-shell", () => {
+  it("opens v0peer citizenship onboarding without marketing chrome", () => {
     renderApp("/game-shell");
-    expect(screen.getByRole("region", { name: /game shell/i })).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: /world movie/i })).toBeInTheDocument();
+    expect(screen.getByText(/^v0peer$/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /become a citizen/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("navigation", { name: /world 2/i })
+    ).not.toBeInTheDocument();
+    expect(document.querySelector(".custom-cursor")).toBeNull();
+    expect(document.documentElement).toHaveClass("game-shell-route");
+    expect(screen.queryByRole("region", { name: /game shell/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: /playback/i })).not.toBeInTheDocument();
     expect(
       screen.queryByRole("heading", { name: /play the streets/i })
     ).not.toBeInTheDocument();
