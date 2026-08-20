@@ -3,6 +3,7 @@ import { LandingHero } from "../components/landing-hero";
 import { MoneyFlowSection } from "../components/money-flow-section";
 import { ParallaxBand } from "../components/parallax-band";
 import { LANDING_HERO } from "../lib/landing-hero";
+import { WORLD2_SEO_FAQ } from "../lib/world2-seo";
 
 export const LandingPage = () => {
   return (
@@ -35,6 +36,17 @@ export const LandingPage = () => {
         <div className="page-band">
           <MoneyFlowSection />
         </div>
+      </ParallaxBand>
+      <ParallaxBand speed={0.14}>
+        <section className="page-band landing-faq" aria-label="World 2 questions">
+          <h2>Questions</h2>
+          {WORLD2_SEO_FAQ.map((item) => (
+            <details key={item.question} className="landing-faq-item">
+              <summary>{item.question}</summary>
+              <p>{item.answer}</p>
+            </details>
+          ))}
+        </section>
       </ParallaxBand>
       <ParallaxBand speed={0.08}>
         <section className="page-band closing" id="launch-interest">

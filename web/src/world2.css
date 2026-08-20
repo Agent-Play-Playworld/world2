@@ -360,6 +360,30 @@ code {
   max-width: 40rem;
 }
 
+.landing-faq {
+  max-width: 42rem;
+}
+
+.landing-faq h2 {
+  margin: 0 0 1.4rem;
+}
+
+.landing-faq-item {
+  margin: 0;
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--mist);
+}
+
+.landing-faq-item summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.landing-faq-item p {
+  margin: 0.7rem 0 0;
+  color: rgba(36, 30, 24, 0.74);
+}
+
 .page-band {
   max-width: 78rem;
   margin: 0 auto;

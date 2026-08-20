@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 import { App } from "./app";
+import { WORLD2_SEO } from "./lib/world2-seo";
 
 const renderApp = (path: string): void => {
   render(
@@ -57,6 +58,18 @@ describe("World 2 landing", () => {
     expect(screen.getAllByRole("region", { name: /world movie/i })).toHaveLength(
       1
     );
+  });
+
+  it("sets the landing search title and answers World 2 questions on the page", () => {
+    renderApp("/");
+    expect(document.title).toBe(WORLD2_SEO.defaultTitle);
+    expect(
+      screen.getByRole("region", { name: /world 2 questions/i })
+    ).toBeInTheDocument();
+    expect(screen.getByText("What is World 2?")).toBeInTheDocument();
+    expect(
+      screen.getByText("Is World 2 the occupancy host or serverUrl?")
+    ).toBeInTheDocument();
   });
 
   it("plays composed world stills as a single movie", async () => {
@@ -114,6 +127,11 @@ describe("game shell page", () => {
     expect(
       screen.queryByRole("heading", { name: /play the streets/i })
     ).not.toBeInTheDocument();
+    expect(document.title).toMatch(/citizenship/i);
+    expect(document.head.querySelector('meta[name="robots"]')).toHaveAttribute(
+      "content",
+      expect.stringMatching(/noindex/i)
+    );
   });
 });
 

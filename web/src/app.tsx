@@ -1,4 +1,5 @@
 import { Route, Routes } from "react-router-dom";
+import { DocumentHead } from "./components/document-head";
 import { SiteChrome } from "./components/site-chrome";
 import { SmoothScrollRoot } from "./components/smooth-scroll-root";
 import { AssetsPage } from "./pages/assets-page";
@@ -14,6 +15,7 @@ import { WebglPage } from "./pages/webgl-page";
 export const App = () => {
   return (
     <SmoothScrollRoot>
+      <DocumentHead />
       <SiteChrome />
       <Routes>
         <Route path="/" element={<LandingPage />} />
