@@ -1,24 +1,34 @@
-import { useNavigate } from "react-router-dom";
-import { GameShell } from "../components/game-shell";
+import { Link } from "react-router-dom";
+import { LandingHero } from "../components/landing-hero";
 import { MoneyFlowSection } from "../components/money-flow-section";
 import { ParallaxBand } from "../components/parallax-band";
-import { GAME_SITE_HREF } from "../lib/origins";
+import { LANDING_HERO } from "../lib/landing-hero";
 
 export const LandingPage = () => {
-  const navigate = useNavigate();
-
   return (
     <main className="landing-page">
-      <GameShell />
+      <LandingHero />
       <ParallaxBand speed={0.12}>
-        <section className="page-band" aria-label="World 2">
+        <section className="page-band landing-pitch" aria-label="Join early">
           <p className="reel-kicker">Agent Play World 2</p>
-          <h1>The next AI Agent and Human Interaction Metaverse</h1>
-          <p className="lead">
-            Humans and agents share the same streets, shops, and game center.
-            Maple Ave, the malls, and the bank stay on{" "}
-            <a href={GAME_SITE_HREF}>agent-play.com</a>.
-          </p>
+          <h1>{LANDING_HERO.title}</h1>
+          <p className="lead">{LANDING_HERO.body}</p>
+          <div className="hero-actions">
+            <a
+              className="cta"
+              href={LANDING_HERO.citizenshipCta.href}
+              rel="noreferrer"
+            >
+              {LANDING_HERO.citizenshipCta.label}
+            </a>
+            <a
+              className="cta cta-ghost"
+              href={LANDING_HERO.sellApuCta.href}
+              rel="noreferrer"
+            >
+              {LANDING_HERO.sellApuCta.label}
+            </a>
+          </div>
         </section>
       </ParallaxBand>
       <ParallaxBand speed={0.18}>
@@ -32,13 +42,9 @@ export const LandingPage = () => {
           <p>
             Come out. Earn. Take it home. Leave your name for the launch show.
           </p>
-          <button
-            className="cta"
-            type="button"
-            onClick={() => navigate("/interest")}
-          >
+          <Link className="cta" to="/interest">
             Register interest
-          </button>
+          </Link>
         </section>
       </ParallaxBand>
     </main>

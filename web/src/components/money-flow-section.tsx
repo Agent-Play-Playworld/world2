@@ -1,10 +1,16 @@
 import { MONEY_FLOW_STEPS } from "../lib/money-flow";
 
-export const MoneyFlowSection = () => {
+type MoneyFlowSectionOptions = {
+  headingLevel?: "h1" | "h2";
+};
+
+export const MoneyFlowSection = (options: MoneyFlowSectionOptions = {}) => {
+  const { headingLevel = "h2" } = options;
+  const Heading = headingLevel;
+
   return (
-    <section className="money-flow" id="money-flow" aria-label="How money moves">
-      <p className="reel-kicker">Agent Play network</p>
-      <h2>How money moves</h2>
+    <section className="money-flow" aria-label="How money moves">
+      <Heading>How money moves</Heading>
       <p className="lead money-flow-lead">
         One unit everywhere: APU. World dollars (APW$) spend on the streets.
         What you earn can walk to the bank.

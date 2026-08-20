@@ -79,6 +79,10 @@ code {
   margin-top: -4px;
 }
 
+.custom-cursor * {
+  pointer-events: none;
+}
+
 .custom-cursor-on-design {
   color: var(--teal);
   scale: 1.28;
@@ -201,6 +205,124 @@ code {
   padding: 0;
 }
 
+.landing-hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  max-width: none;
+}
+
+.landing-hero-cover {
+  position: relative;
+  min-width: 0;
+  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.landing-hero-cover-movie {
+  background: #efe6d6;
+}
+
+.landing-hero-cover-movie .frame-carousel-hero {
+  position: absolute;
+  inset: 5.5rem 2.75rem 2.75rem;
+  z-index: 1;
+  width: auto;
+  height: auto;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 1.6rem;
+}
+
+.landing-hero-cover-movie .carousel-stage,
+.landing-hero-cover-movie .carousel-slide,
+.landing-hero-cover-movie .carousel-slide.is-active,
+.landing-hero-cover-movie .carousel-still {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  border-radius: 1.6rem;
+}
+
+.landing-hero-cover-movie .carousel-stage {
+  z-index: 0;
+  pointer-events: none;
+}
+
+.landing-hero-cover-movie .carousel-slide,
+.landing-hero-cover-movie .carousel-slide.is-active {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.landing-hero-cover-movie .carousel-still {
+  object-fit: cover;
+  object-position: center;
+}
+
+.landing-hero-cover-network {
+  background: #efe6d6;
+}
+
+.landing-hero-cover-network .money-flow-map {
+  position: absolute;
+  inset: 5.5rem 2.75rem 2.75rem;
+  width: auto;
+  height: auto;
+  margin: 0;
+  border-radius: 1.6rem;
+  overflow: hidden;
+  display: block;
+}
+
+.landing-hero-cover-network .money-flow-map-paper {
+  fill: #efe6d6;
+}
+
+.landing-hero-cover-network .money-flow-map-street {
+  stroke-width: 3.2;
+  stroke: rgba(61, 111, 112, 0.28);
+}
+
+.landing-hero-cover-network .money-flow-map-rail {
+  stroke-width: 1.1;
+}
+
+.landing-hero-cover-network .money-flow-map-pulse {
+  stroke-width: 1.35;
+}
+
+.landing-hero-cover-network .money-flow-map-node text {
+  font-size: 3.4px;
+  font-weight: 600;
+}
+
+.landing-hero-network-kicker {
+  position: absolute;
+  top: 6.5rem;
+  left: 1.6rem;
+  z-index: 2;
+  margin: 0;
+  color: var(--teal);
+  text-shadow: 0 8px 24px rgba(239, 230, 214, 0.8);
+  pointer-events: none;
+}
+
+.landing-pitch h1 {
+  max-width: 24ch;
+  font-size: clamp(2.2rem, 4.8vw, 4.4rem);
+}
+
+.landing-pitch .lead {
+  max-width: 40rem;
+}
+
 .page-band {
   max-width: 78rem;
   margin: 0 auto;
@@ -237,7 +359,15 @@ code {
 }
 
 .game-shell-world .frame-carousel,
-.game-shell-world .frame-carousel-hero,
+.game-shell-world .frame-carousel-hero {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  border-radius: 0;
+}
+
 .game-shell-world .carousel-stage,
 .game-shell-world .carousel-slide,
 .game-shell-world .carousel-slide.is-active,
@@ -248,10 +378,16 @@ code {
   border-radius: 0;
 }
 
+.game-shell-world .carousel-stage {
+  z-index: 0;
+  pointer-events: none;
+}
+
 .game-shell-world .carousel-slide,
 .game-shell-world .carousel-slide.is-active {
   position: absolute;
   inset: 0;
+  pointer-events: none;
 }
 
 .game-shell-world .carousel-still {
@@ -438,7 +574,8 @@ h2 {
   position: absolute;
   right: 1.5rem;
   bottom: 1.5rem;
-  z-index: 3;
+  z-index: 6;
+  pointer-events: auto;
 }
 
 .frame-carousel-hero .carousel-btn {
@@ -454,6 +591,52 @@ h2 {
 
 .frame-carousel-hero .carousel-dot.is-active {
   background: var(--foam);
+}
+
+.frame-carousel-player {
+  position: relative;
+  margin: 0;
+}
+
+.frame-carousel-player .carousel-stage {
+  min-height: 0;
+  flex: 1;
+  aspect-ratio: auto;
+  height: 100%;
+  min-height: 28rem;
+  border-radius: 1.5rem;
+  box-shadow: 0 28px 64px rgba(36, 30, 24, 0.18);
+}
+
+.frame-carousel-player .carousel-slide,
+.frame-carousel-player .carousel-slide.is-active {
+  position: absolute;
+  inset: 0;
+}
+
+.frame-carousel-player .carousel-still {
+  height: 100%;
+  min-height: 100%;
+  animation: ken-burns 28s ease-in-out infinite alternate;
+}
+
+.frame-carousel-player .carousel-controls {
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 6;
+  pointer-events: auto;
+  justify-content: space-between;
+}
+
+.frame-carousel-player .carousel-btn {
+  background: rgba(255, 250, 241, 0.78);
+  backdrop-filter: blur(12px);
+}
+
+.frame-carousel-player .carousel-dots {
+  flex: 0 1 auto;
 }
 
 .frame-carousel-story,
@@ -528,8 +711,72 @@ h2 {
 
 .money-flow-lead {
   max-width: 34rem;
-  margin-bottom: 4.5rem;
+  margin-bottom: 2rem;
   color: rgba(36, 30, 24, 0.72);
+}
+
+.money-flow-map {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0 0 3.5rem;
+  border-radius: 1.6rem;
+  overflow: visible;
+  background: transparent;
+}
+
+.money-flow-map-paper {
+  fill: rgba(255, 250, 241, 0.72);
+}
+
+.money-flow-map-park {
+  fill: rgba(124, 154, 134, 0.28);
+}
+
+.money-flow-map-block {
+  fill: rgba(196, 165, 116, 0.22);
+}
+
+.money-flow-map-street {
+  fill: none;
+  stroke: rgba(61, 111, 112, 0.22);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+}
+
+.money-flow-map-rail {
+  fill: none;
+  stroke: rgba(61, 111, 112, 0.28);
+  stroke-width: 0.7;
+  stroke-linecap: round;
+}
+
+.money-flow-map-pulse {
+  fill: none;
+  stroke: var(--coral);
+  stroke-width: 0.9;
+  stroke-linecap: round;
+  stroke-dasharray: 3 9;
+  animation: money-flow-dash 2.6s linear infinite;
+}
+
+.money-flow-map-node circle {
+  fill: var(--foam);
+  stroke: var(--teal);
+  stroke-width: 0.45;
+}
+
+.money-flow-map-node text {
+  fill: var(--ink);
+  font-size: 2.4px;
+  font-family: "Avenir Next", "Segoe UI", sans-serif;
+  text-anchor: middle;
+}
+
+@keyframes money-flow-dash {
+  to {
+    stroke-dashoffset: -48;
+  }
 }
 
 .money-flow-steps {
@@ -700,6 +947,29 @@ h2 {
     border-radius: 1.4rem;
   }
 
+  .landing-hero {
+    grid-template-columns: 1fr;
+    min-height: 0;
+    padding: 0;
+  }
+
+  .landing-hero-cover {
+    min-height: 78vh;
+    height: 78vh;
+  }
+
+  .landing-pitch h1 {
+    max-width: none;
+  }
+
+  .frame-carousel-player .carousel-stage {
+    aspect-ratio: 16 / 11;
+    max-height: none;
+    min-height: 16rem;
+    height: auto;
+    flex: none;
+  }
+
   .frame-carousel-story,
   .frame-carousel-film {
     grid-template-columns: 1fr;
@@ -710,11 +980,21 @@ h2 {
     min-height: 16rem;
   }
 
+  .frame-carousel-player .carousel-still {
+    height: 100%;
+    min-height: 100%;
+  }
+
   .game-shell,
   .game-shell-world .carousel-still,
   .frame-carousel-hero .carousel-still {
     height: 100vh;
     min-height: 100vh;
+  }
+
+  .landing-hero-cover-movie .carousel-still {
+    height: 100%;
+    min-height: 100%;
   }
 
   .money-flow-steps {

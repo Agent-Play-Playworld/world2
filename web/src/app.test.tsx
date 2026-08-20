@@ -16,16 +16,41 @@ const renderApp = (path: string): void => {
 };
 
 describe("World 2 landing", () => {
-  it("loads a quiet world movie over the full canvas", () => {
+  it("opens full-bleed movie and network covers, then the join-early pitch", () => {
     renderApp("/");
+    const hero = screen.getByRole("region", { name: /world 2 opening/i });
+    expect(hero).toHaveClass("landing-hero-covers");
+    expect(within(hero).getByRole("region", { name: /world movie/i })).toHaveClass(
+      "frame-carousel-hero"
+    );
+    const network = within(hero).getByRole("region", {
+      name: /agent play network/i,
+    });
+    expect(within(network).getByRole("img", { name: /money flow map/i })).toBeInTheDocument();
+    expect(within(network).queryByText(/\$10 APW\$/)).not.toBeInTheDocument();
+    expect(
+      within(hero).queryByRole("heading", { name: /join early/i })
+    ).not.toBeInTheDocument();
     expect(
       screen.getByRole("heading", {
-        name: /the next ai agent and human interaction metaverse/i,
+        name: /join early: world 2 is the next ai agent and human interaction metaverse, and the streets still have room for your name\./i,
       })
     ).toBeInTheDocument();
     expect(
-      screen.queryByText(/walk a live 3d world/i)
-    ).not.toBeInTheDocument();
+      screen.getByText(
+        /humans and agents already share maple ave, the shops, and the bank/i
+      )
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /start citizenship/i })).toHaveAttribute(
+      "href",
+      "https://agent-play.com"
+    );
+    expect(screen.getByRole("link", { name: /sell apu/i })).toHaveAttribute(
+      "href",
+      "https://econext.llc/sell-apu"
+    );
+    expect(screen.queryByRole("region", { name: /game shell/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/walk a live 3d world/i)).not.toBeInTheDocument();
     expect(
       screen.queryByText(/world 2 is the next camera/i)
     ).not.toBeInTheDocument();
@@ -41,12 +66,14 @@ describe("World 2 landing", () => {
     expect(within(movie).getByRole("img", { name: /come out/i })).toBeInTheDocument();
     await user.click(within(movie).getByRole("button", { name: /^next$/i }));
     expect(within(movie).getByRole("img", { name: /the plaza/i })).toBeInTheDocument();
-    expect(within(movie).getByRole("button", { name: /^previous$/i })).toBeInTheDocument();
+    await user.click(within(movie).getByRole("button", { name: /^previous$/i }));
+    expect(within(movie).getByRole("img", { name: /come out/i })).toBeInTheDocument();
   });
 
   it("shows how money moves as its own section", () => {
     renderApp("/");
     const money = screen.getByRole("region", { name: /how money moves/i });
+    expect(within(money).queryByRole("img", { name: /money flow map/i })).not.toBeInTheDocument();
     expect(within(money).getByText(/\$10 APW\$/)).toBeInTheDocument();
     expect(within(money).getByText(/100 APU/i)).toBeInTheDocument();
     expect(within(money).getByRole("link", { name: /econext/i })).toHaveAttribute(
@@ -79,11 +106,11 @@ describe("game shell page", () => {
 });
 
 describe("World 2 chrome", () => {
-  it("keeps a translucent navbar over the world", () => {
+  it("keeps a translucent navbar over the opening", () => {
     renderApp("/");
     const header = screen.getByRole("banner");
     expect(header).toHaveClass("site-header-overlay");
-    expect(screen.getByRole("region", { name: /game shell/i })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: /world 2 opening/i })).toBeInTheDocument();
   });
 
   it("shows professional nav groups with engineering sublinks", async () => {

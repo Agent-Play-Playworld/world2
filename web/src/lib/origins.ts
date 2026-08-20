@@ -6,3 +6,4 @@ export const VISAGE_REPOSITORY_HREF =
 export const VISAGE_DEMO_MODEL_SRC =
   "https://readyplayerme.github.io/visage/male.glb";
 export const ECONEXT_HREF = "https://econext.llc";
+export const SELL_APU_HREF = `${ECONEXT_HREF}/sell-apu`;

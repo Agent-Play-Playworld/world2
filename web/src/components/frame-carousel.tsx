@@ -3,7 +3,7 @@ import { ART_REEL_FRAMES, artRefPublicPath } from "../lib/art-reel";
 import { stepCarouselIndex } from "../lib/carousel";
 import type { ArtReelFrame } from "../schemas/art-reel";
 
-type FrameCarouselVariant = "hero" | "story" | "film";
+type FrameCarouselVariant = "hero" | "player" | "story" | "film";
 
 type FrameCarouselProps = {
   label: string;
@@ -92,7 +92,7 @@ export const FrameCarousel = (options: FrameCarouselProps) => {
           );
         })}
       </div>
-      {variant === "hero" ? null : (
+      {variant === "hero" || variant === "player" ? null : (
         <div className="carousel-copy">
           <p className="reel-kicker">World 2</p>
           <h2>{active.title}</h2>
