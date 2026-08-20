@@ -86,17 +86,36 @@ export const AssetsPage = () => {
           </p>
         ) : null}
       </section>
-      <ul className="asset-grid">
-        {STORE_CATALOG.map((item) => (
-          <li key={item.id} className="asset-card">
-            <h3>{item.title}</h3>
-            <p>{item.summary}</p>
-            <button className="cta" type="button" onClick={() => onBuy(item)}>
-              {itemActionLabel(item)}
-            </button>
-          </li>
-        ))}
-      </ul>
+      <section id="avatar-set" className="catalog-band">
+        <h2>Avatar set</h2>
+        <ul className="asset-grid">
+          {STORE_CATALOG.filter((item) => item.kind === "avatar-set").map(
+            (item) => (
+              <li key={item.id} className="asset-card">
+                <h3>{item.title}</h3>
+                <p>{item.summary}</p>
+                <button className="cta" type="button" onClick={() => onBuy(item)}>
+                  {itemActionLabel(item)}
+                </button>
+              </li>
+            )
+          )}
+        </ul>
+      </section>
+      <section id="inks" className="catalog-band">
+        <h2>Inks</h2>
+        <ul className="asset-grid">
+          {STORE_CATALOG.filter((item) => item.kind === "ink").map((item) => (
+            <li key={item.id} className="asset-card">
+              <h3>{item.title}</h3>
+              <p>{item.summary}</p>
+              <button className="cta" type="button" onClick={() => onBuy(item)}>
+                {itemActionLabel(item)}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
       {notice.kind === "error" ? (
         <p className="form-error">{notice.message}</p>
       ) : null}

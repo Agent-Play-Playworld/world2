@@ -6,7 +6,7 @@ import { GAME_SITE_HREF } from "../lib/origins";
 export const DevelopersPage = () => {
   return (
     <ExperienceLayout
-      kicker="Rooms for builders"
+      kicker="Engineering"
       title="Developers"
       lead="World 2 is a Vite TypeScript WebGL client of Agent Play occupancy. Pick the room that matches how you like to build."
     >

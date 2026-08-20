@@ -26,41 +26,52 @@ describe("World 2 landing", () => {
     ).toBeInTheDocument();
   });
 
-  it("plays art-ref stills as a scrolling movie", () => {
+  it("plays art-ref stills in a story carousel", async () => {
+    const user = userEvent.setup();
     renderApp("/");
-    const designs = screen.getAllByRole("img");
-    expect(designs.length).toBeGreaterThanOrEqual(11);
+    const story = screen.getByRole("region", { name: /story reel/i });
+    expect(story).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /come out/i })).toBeInTheDocument();
+    await user.click(within(story).getByRole("button", { name: /next still/i }));
     expect(
-      screen.getByRole("img", { name: /take it home/i })
+      screen.getByRole("img", { name: /walk with us/i })
     ).toBeInTheDocument();
   });
 
-  it("links out to the live Agent Play world", () => {
+  it("links out to the live Agent Play world", async () => {
+    const user = userEvent.setup();
     renderApp("/");
-    const playLinks = screen.getAllByRole("link", { name: /enter the world/i });
-    expect(playLinks.length).toBeGreaterThan(0);
-    expect(playLinks[0]).toHaveAttribute("href", "https://agent-play.com");
+    await user.hover(screen.getByRole("button", { name: /^play$/i }));
+    const liveWorld = screen.getAllByRole("link", { name: /live world/i });
+    expect(liveWorld.length).toBeGreaterThan(0);
+    for (const link of liveWorld) {
+      expect(link).toHaveAttribute("href", "https://agent-play.com");
+    }
   });
 });
 
 describe("World 2 chrome", () => {
-  it("shows a navbar to assets and developer rooms", () => {
+  it("shows professional nav groups with engineering sublinks", async () => {
+    const user = userEvent.setup();
     renderApp("/");
     expect(screen.getByRole("navigation", { name: /world 2/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /^assets$/i })).toHaveAttribute(
-      "href",
-      "/assets"
-    );
-    expect(screen.getByRole("link", { name: /webgl developers/i })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: /^play$/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^launch$/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^citizens$/i })).toBeInTheDocument();
+    await user.hover(screen.getByRole("button", { name: /^engineering$/i }));
+    expect(screen.getByRole("link", { name: /^webgl$/i })).toHaveAttribute(
       "href",
       "/webgl"
     );
-    expect(screen.getByRole("link", { name: /rust experience/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /^rust$/i })).toHaveAttribute(
       "href",
       "/rust"
     );
-    expect(screen.getByRole("link", { name: /^c$/i })).toHaveAttribute("href", "/c");
-    expect(screen.getByRole("link", { name: /visage/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /native c/i })).toHaveAttribute(
+      "href",
+      "/c"
+    );
+    expect(screen.getByRole("link", { name: /^visage$/i })).toHaveAttribute(
       "href",
       "/visage"
     );
@@ -111,10 +122,10 @@ describe("experience rooms", () => {
     expect(
       screen.getByRole("heading", { name: /developers/i })
     ).toBeInTheDocument();
-    expect(within(main).getByRole("link", { name: /webgl developers/i })).toBeInTheDocument();
-    expect(within(main).getByRole("link", { name: /rust experience/i })).toBeInTheDocument();
-    expect(within(main).getByRole("link", { name: /^c$/i })).toBeInTheDocument();
-    expect(within(main).getByRole("link", { name: /visage/i })).toBeInTheDocument();
+    expect(within(main).getByRole("link", { name: /^webgl$/i })).toBeInTheDocument();
+    expect(within(main).getByRole("link", { name: /^rust$/i })).toBeInTheDocument();
+    expect(within(main).getByRole("link", { name: /native c/i })).toBeInTheDocument();
+    expect(within(main).getByRole("link", { name: /^visage$/i })).toBeInTheDocument();
   });
 
   it("credits the Visage repository", () => {

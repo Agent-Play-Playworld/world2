@@ -1,13 +1,13 @@
 import { AppRouteSchema, type AppRoute } from "../schemas/routes";
 
 const RAW_ROUTES: readonly AppRoute[] = [
-  { id: "landing", path: "/", label: "World 2" },
-  { id: "interest", path: "/interest", label: "Show interest" },
-  { id: "assets", path: "/assets", label: "Assets" },
-  { id: "developers", path: "/developers", label: "Developers" },
-  { id: "webgl", path: "/webgl", label: "WebGL developers" },
-  { id: "rust", path: "/rust", label: "Rust Experience" },
-  { id: "c", path: "/c", label: "C" },
+  { id: "landing", path: "/", label: "Opening reel" },
+  { id: "interest", path: "/interest", label: "Register interest" },
+  { id: "assets", path: "/assets", label: "Studio catalog" },
+  { id: "developers", path: "/developers", label: "Overview" },
+  { id: "webgl", path: "/webgl", label: "WebGL" },
+  { id: "rust", path: "/rust", label: "Rust" },
+  { id: "c", path: "/c", label: "Native C" },
   { id: "visage", path: "/visage", label: "Visage" },
 ];
 
