@@ -10,7 +10,7 @@ Architecture Decision Records for Agent Play World 2. Dates are not ship dates. 
 
 **Original decision.** World 2 is a native Godot 4 client. Vulkan is an implementation detail of Godot’s renderer, not a product name and not a replacement for Pixi inside Next.js. The Agent Play home page stays the 2D game.
 
-**Why superseded.** The human now prioritizes a **browser 3D experience** at `https://world2.v0peer.org`. v1 is a web client, not a native Godot binary. Vulkan/Godot desktop is later / optional. The home-page constraint stands: still no 3D canvas on Agent Play `/`.
+**Why superseded.** v1 is a **Vite TypeScript SPA** at `https://world2.v0peer.org` with a **Three.js WebGL** canvas (ADR-008). Godot native and Godot HTML5/WASM are not v1. The home-page constraint stands: still no 3D canvas on Agent Play `/`.
 
 **Still true from this ADR.**
 
@@ -21,13 +21,13 @@ Architecture Decision Records for Agent Play World 2. Dates are not ship dates. 
 
 **Status:** accepted
 
-**Context.** Occupant Model v1: one canonical snapshot, one fanout path, one incremental sync (`playerChainNotify` + `getPlayerChainNode`), one interaction policy. Main World APIs are `https://world1.v0peer.org`. World 2’s page is `https://world2.v0peer.org`.
+**Context.** Occupant Model v1: one canonical snapshot, one fanout path, one incremental sync (`playerChainNotify` + `getPlayerChainNode`), one interaction policy. Main World occupancy APIs are `https://agent-play.com` (ADR-012). World 2’s page is `https://world2.v0peer.org`.
 
-**Decision.** World 2 is another **client** of that host, like play-ui and `RemotePlayWorld`. It does not run Redis, PlayWorld, AQL, or player-chain genesis. It does not mint a private `sid` as a new world. A Vite/Next static app on world2 is presentation only.
+**Decision.** World 2 is another **client** of that host, like play-ui and `RemotePlayWorld`. It does not run Redis, PlayWorld, AQL, or player-chain genesis. It does not mint a private `sid` as a new world. The Vite app on world2 is presentation only.
 
 **Consequences.**
 
-- All occupancy mutations go through existing HTTP/SSE/RPC on world1.
+- All occupancy mutations go through existing HTTP/SSE/RPC on `agent-play.com`.
 - Two people, one in Pixi and one in the 3D tab, must see the same `worldMap.occupants`.
 - Failure to reach Main World is a HUD error, not a local sandbox world (except recorded fixtures in tests).
 
@@ -35,13 +35,13 @@ Architecture Decision Records for Agent Play World 2. Dates are not ship dates. 
 
 **Status:** accepted
 
-**Context.** Godot 4 has `MultiplayerAPI` / `ENet`. Browser stacks have Colyseus, Photon, socket.io rooms, and WebRTC data channels. Those are designed for a game server the engine owns.
+**Context.** Engine multiplayer kits — Colyseus, Photon, socket.io rooms, WebRTC data channels, and Godot `MultiplayerAPI` / `ENet` if ADR-011 is ever activated — are designed for a game server the engine owns.
 
-**Decision.** Do not use Godot multiplayer, web multiplayer kits, or peer meshes as the occupancy or pose authority. Other humans and agents appear because the **Agent Play host** said so in the snapshot/SSE (and later geography mesh). World 2 may use ordinary HTTPS `fetch` and `EventSource` only.
+**Decision.** Do not use engine multiplayer, web multiplayer kits, or peer meshes as the occupancy or pose authority. Other humans and agents appear because the **Agent Play host** said so in the snapshot/SSE (and later geography mesh). World 2 may use ordinary HTTPS `fetch` and `EventSource` only.
 
 **Consequences.**
 
-- No `multiplayer.multiplayer_peer` (future Godot) and no substitute room server for world state.
+- No engine `multiplayer` peer (including a future Godot client) and no substitute room server for world state.
 - Peer voice, when built, uses host `peerCall*` + a dedicated audio WebRTC connection, matching play-ui.
 
 ## ADR-004: Desktop first; mobile later
@@ -50,7 +50,7 @@ Architecture Decision Records for Agent Play World 2. Dates are not ship dates. 
 
 **Original decision.** First ship target is desktop Godot 4 talking to Main World. Mobile Godot export is out of the implementation phases until desktop Phase 1 is real.
 
-**Now.** v1 is a **browser** client (desktop and mobile browsers that can run WebGL). Native mobile export and Godot mobile are still later. Touch Play Pad parity with play-ui is not Phase 1; WASD/arrows on a focused canvas is.
+**Now.** v1 is a **browser** client (desktop and mobile browsers that can run WebGL). Native mobile export and Godot (ADR-011) are parked, not Phase 0–1. Touch Play Pad parity with play-ui is not Phase 1; WASD/arrows on a focused canvas is.
 
 ## ADR-005: GDScript vs C#
 
@@ -60,7 +60,7 @@ Architecture Decision Records for Agent Play World 2. Dates are not ship dates. 
 
 **Decision for v1.** There is no Godot project in Phase 0–1. Protocol, HTTP, SSE, and the 3D app are **TypeScript throughout**. The GDScript vs C# question returns only if ADR-011 (Godot native later) is activated.
 
-**Not recommended for v1.** Implementing Occupant Model v1 only in GDScript/C# with no TS tests. A custom Vulkan engine. Godot HTML5 as the first ship.
+**Rejected for v1.** Implementing Occupant Model v1 only in GDScript/C# with no TS tests. A custom Vulkan engine. Godot native or Godot HTML5/WASM as the first ship.
 
 ## ADR-006: Local human locomotion, no new move RPC
 
@@ -80,47 +80,56 @@ Architecture Decision Records for Agent Play World 2. Dates are not ship dates. 
 
 **Decision.** World 2 docs and later UI copy stay concrete: snapshot, occupant, sid, bounds, amenity, Maple Ave cabinets. No fake launch dates. Legal name on credits: **Viroke Technologies Inc (a Delaware US corporation)**.
 
-## ADR-008: Browser TypeScript 3D client for v1; Godot native later if still wanted
+## ADR-008: v1 renderer is WebGL via Three.js in a TypeScript Vite app
 
-**Status:** accepted for v1 (overrides ADR-001)
+**Status:** accepted (overrides ADR-001; parks ADR-011)
 
-**Context.** Occupancy protocol tests, play-ui, and the Agent Play team are TypeScript. The human wants a public 3D page at `https://world2.v0peer.org`, not a desktop binary first. Browser 3D options:
+**Context.** Occupancy protocol tests, play-ui, and the Agent Play team are TypeScript. The public 3D page is `https://world2.v0peer.org`. An earlier plan made native Godot 4 / Vulkan the v1 client. A later pass chose a browser client but still listed Godot HTML5/WASM as a competing option and called Three.js “recommended.” The human now prefers **WebGL over Godot**. That is the v1 renderer.
 
-| Path | Fit for v1 | Honest cost |
-|------|------------|-------------|
-| **Three.js / WebGL** | Best ship path today | Mature, huge examples, works in current Safari/Chrome/Firefox. Not the newest GPU API. |
-| **WebGPU** (Three.js WebGPU renderer or vanilla) | Right long-term | Uneven Safari; extra fallback work. Do not block Phase 1 on it. |
-| **Godot 4 HTML5 export** | Possible, not priority | Heavy WASM download, longer first paint, weaker `fetch`/SSE story in engine HTTP APIs. Fights the TS protocol-first plan. |
-| **Godot 4 native / Vulkan** | Later / optional | Strong desktop renderer; separate install; not the public URL. |
+**Decision.** v1 is a **Vite TypeScript SPA** whose 3D canvas is **Three.js on WebGL**. This is accepted for Phase 0–1. It is not a recommendation, not “or Godot,” and not a fallback if SSE is hard.
 
-**Decision.** v1 is a **Vite (or similar) TypeScript SPA** with **Three.js / WebGL**. Protocol tests stay in `protocol/` and land first. WebGPU may be adopted later as a renderer swap behind the same scene graph. Godot native (or HTML5) is a future presentation of the same protocol package, not the first ship.
+Rejected for v1 — not competing options in Phase 0–1:
+
+- Godot 4 native / Vulkan
+- Godot 4 HTML5 / WASM export
+- A custom Vulkan engine
+- WebGPU as a v1 requirement (Safari is still uneven; do not block Phase 1)
+
+WebGPU may be adopted later as a Three.js renderer swap behind the same scene graph. That does not reopen Godot for v1. Godot (native or HTML5) exists only as **ADR-011**, a parked future second client of `protocol/`.
 
 **Consequences.**
 
-- `web/` instead of `godot/` for Phase 1.
+- Phase 0–1 layout is `protocol/` + `web/`, with optional `kit/` for the presentation pack (ADR-013). There is no `godot/` tree, editor project, or HTML5 export in those phases.
 - Same `fetch` + `EventSource` skills as play-ui.
-- DNS for `world2.v0peer.org` points at the static/web app, not a Godot export.
-- ADR-005 (GDScript vs C#) does not gate v1.
+- DNS for `world2.v0peer.org` points at the Vite static app, not a Godot export.
+- ADR-005 (GDScript vs C#) does not gate v1. No renderer decision remains open for v1.
 
 ## ADR-009: `world2.v0peer.org` is the 3D origin; APIs stay on `world1.v0peer.org`
 
-**Status:** accepted
+**Status:** superseded in part by ADR-012 (occupancy host). Split-origin, no-cookies, and “world2 is the 3D page” remain true.
 
-**Context.** Main World 2D and occupancy APIs already live at `https://world1.v0peer.org`. Marketing lives on agent-play.com and aliases. play-ui can be same-origin with the API (web-ui) or split via `VITE_PLAY_API_BASE`. World 2 is always split: the 3D page must not become a second Next occupancy host.
+**Context.** An earlier pass treated Main World 2D and occupancy APIs as living at `https://world1.v0peer.org`, with agent-play.com as marketing / legacy names. play-ui can be same-origin with the API (web-ui) or split via `VITE_PLAY_API_BASE`. World 2 is always split: the 3D page must not become a second Next occupancy host.
 
-**Decision.**
+**Original decision.**
 
 - Deploy the World 2 web app at **`https://world2.v0peer.org`**. Canvas at `/`.
-- All session / snapshot / SSE / RPC calls go to **`https://world1.v0peer.org/api/agent-play`** (or the current Agent Play API host), cross-origin.
+- All session / snapshot / SSE / RPC calls go to **`https://world1.v0peer.org/api/agent-play`** (or the then-current Agent Play API host), cross-origin.
 - Do not require changing the Agent Play home page. A footer / worlds nav link on agent-play is an optional follow-up in that repo.
 - Auth for occupancy is headers + `sid` query, not cookies. Do not use credentialed CORS (`withCredentials` / `Access-Control-Allow-Credentials`) for v1.
 - Host must add CORS on session, sdk/rpc, and SSE for the World 2 origin (today those routes lack it; proximity-action already has `*`).
 
-**Consequences.**
+**Why the API-host clause is superseded.** Occupancy and communication stay on **`https://agent-play.com`**. `world1.v0peer.org` is a disposable alias of that same deployment and may be discontinued once world2 / worldN exist. See ADR-012.
 
-- `sid` travels in JSON and query strings; never log it in full.
-- `EventSource` without `withCredentials`; `fetch` with `credentials: "omit"`.
-- Config default is Main World, never `window.location.origin`.
+**Still true from this ADR.**
+
+- World 2 page origin is `https://world2.v0peer.org`. Canvas at `/`.
+- Split origin: the 3D page is never an occupancy API and never a valid `serverUrl`.
+- No cookies for occupancy. `EventSource` without `withCredentials`; `fetch` with `credentials: "omit"`.
+- Do not require changing the Agent Play home page to ship World 2. 2D game stays on agent-play.com `/`; 3D canvas is not on that `/`.
+- Host must add CORS on session, sdk/rpc, and events for the World 2 origin.
+- Config never uses `window.location.origin` as the API base.
+
+**Historical note.** play-ui restore still canonicalizes aliases **to** `world1.v0peer.org`. That matches this ADR’s original API host, not ADR-012. The restore code should flip to `agent-play.com`.
 
 ## ADR-010: View-only by default on the public URL
 
@@ -132,27 +141,80 @@ Architecture Decision Records for Agent Play World 2. Dates are not ship dates. 
 
 **Consequences.** HUD should say view-only. Another viewer’s walk stays local (ADR-006). Wrong-origin credential restore is still required when identity ships.
 
-## ADR-011: Godot 4 native / Vulkan (future, optional)
+## ADR-011: Godot 4 native / Vulkan (parked, future only)
 
-**Status:** proposed for after browser v1 — do not start this in Phase 1
+**Status:** parked — not a competing v1 option; do not start in Phase 0–1
 
-**Context.** ADR-001’s desktop Godot idea is still a valid **second client** if a native binary is wanted later. It would consume the same `protocol/` tests and the same world1 APIs (no CORS; native HTTP). GDScript vs C# (old ADR-005) would be decided then.
+**Context.** ADR-001’s desktop Godot idea could still be a **second client** after the browser v1 exists. It would consume the same `protocol/` tests and the same `agent-play.com` APIs (no CORS; native HTTP). GDScript vs C# (old ADR-005) would be decided then.
 
-**Decision.** Keep Godot as a future ADR, not the v1 path. If activated: native desktop first, HTML5 export still not the priority, no Godot multiplayer occupancy (ADR-003).
+**Decision.** Godot stays parked. It is not mixed into the Phase 0–1 module layout. Do not treat Godot HTML5/WASM as a v1 alternative if SSE or WebGL is hard. If this ADR is ever activated by a later human decision: native desktop first, HTML5 export still not the priority, no Godot multiplayer occupancy (ADR-003).
 
 ## Open decisions (human)
 
-Fewer than the Godot-first plan. Remaining:
+Renderer is **not** among these. Remaining:
 
 1. **When to npm-link `@agent-play/sdk`** into `protocol/` (after Phase 0 fixtures, or immediately when coding starts).
 2. **Meters per world unit** if art direction needs a number other than 1.
 3. **Phase 2 start:** proximity only vs identity + proximity together.
-4. **CORS shape on the host:** allowlist `https://world2.v0peer.org` vs `*` for view-only routes. Recommendation: allowlist once identity headers exist; `*` is acceptable for cookie-less view-only if that ships faster.
-5. **WebGPU timeline:** v1 stays WebGL; whether Phase 3+ adopts Three.js WebGPU is optional.
+4. **CORS shape on the host:** allowlist `https://world2.v0peer.org` vs `*` for view-only routes on `agent-play.com`. Recommendation: allowlist once identity headers exist; `*` is acceptable for cookie-less view-only if that ships faster.
+5. **WebGPU timeline:** v1 stays WebGL (ADR-008). Whether a later phase adopts Three.js WebGPU is optional and does not reopen Godot.
+6. **When Agent Play production `MAIN_WORLD_HOST` flips** from `world1.v0peer.org` to `agent-play.com` (restore + AQL default). World 2 docs already specify intended policy; play-ui code has not flipped.
 
 Closed vs the previous list:
 
-- **GDScript vs C#** — not a v1 decision (ADR-005 deferred).
+- **v1 renderer** — WebGL via Three.js in a Vite TypeScript app (ADR-008). No remaining human decision.
+- **GDScript vs C#** — not a v1 decision (ADR-005 deferred until ADR-011).
 - **View-only vs always credentials** — view-only for the public URL (ADR-010).
-- **Godot vs browser for v1** — browser TS 3D (ADR-008).
-- **World 2 URL / split origin** — `world2.v0peer.org` → world1 APIs (ADR-009).
+- **Godot vs browser for v1** — browser TS 3D, WebGL/Three.js (ADR-008). Godot parked as ADR-011.
+- **World 2 URL / split origin** — `world2.v0peer.org` is the 3D page; occupancy is `agent-play.com` (ADR-009 still-true clauses + ADR-012).
+- **GLB vs occupancy** — kit, not baked city (ADR-013).
+
+## ADR-012: Occupancy root is `https://agent-play.com`; worldN pages are cameras
+
+**Status:** accepted (supersedes the API-host clause of ADR-009)
+
+**Context.** ADR-009 named `https://world1.v0peer.org` as the occupancy API host and treated `agent-play.com` as marketing / legacy. The product decision is the reverse: keep **`https://agent-play.com`** as the root communication / occupancy server. `https://world1.v0peer.org` may be discontinued once world2 or worldN clients exist. `https://world2.v0peer.org` (and future `worldN.v0peer.org`) are installable 3D clients / page origins, never occupancy APIs.
+
+play-ui `MAIN_WORLD_HOST` is still `world1.v0peer.org` at the time of this ADR, and restore still canonicalizes aliases **to** world1. That is current code, not intended policy.
+
+**Decision.**
+
+- Canonical occupancy origin: **`https://agent-play.com`**.
+- Canonical API base: **`https://agent-play.com/api/agent-play`**.
+- New `credentials.json` `serverUrl`: **`https://agent-play.com`**.
+- Same-deployment aliases: `www.agent-play.com`, `playworld.world`, and **`world1.v0peer.org` while it still exists**. Restore canonicalizes these **to** `agent-play.com`.
+- `https://world1.v0peer.org` is disposable. Clients must not depend on it as the canonical host.
+- `https://world2.v0peer.org` and `https://worldN.v0peer.org` are page origins / cameras. Never occupancy APIs. Never valid `serverUrl`.
+- Do not use `window.location.origin` as the API base on a worldN page.
+- 2D game remains on `agent-play.com` (home stays game-only). 3D canvas is not on Agent Play `/`.
+- CORS: `agent-play.com` must allow the World 2 origin on session, sdk/rpc, and events.
+- HUD shows page origin vs **server** origin `agent-play.com`.
+
+**Consequences.**
+
+- World 2 default API base is `https://agent-play.com/api/agent-play`.
+- Protocol tests assert that default, and that `world2.v0peer.org` is rejected as `serverUrl`.
+- Agent Play operator copy (help, playground, docs) must not tell developers that agent-play.com is a retired map or that world1 is the only CONNECT host.
+- Agent Play restore / `MAIN_WORLD_HOST` should flip to match this ADR; until then, World 2 still targets `agent-play.com` and documents the code gap.
+
+## ADR-013: GLB is a presentation kit; occupancy stays JSON
+
+**Status:** accepted
+
+**Context.** A 3D client needs meshes. Baking Maple Ave and every stall into one city GLB would ignore live occupants, parking tickets, and house ownership. png2glb can compile reference PNGs to GLB, which is easy to mistake for “the world.”
+
+**Decision.**
+
+- Three layers: occupancy JSON on `agent-play.com`, kit GLBs, atmosphere (toon/cel look pass after load).
+- Occupant renderer instances kit prefabs at snapshot coordinates. It does not bake a static town that ignores occupants.
+- png2glb is a **kit compiler**. It emits a versioned pack (`manifest.json` + per-key GLBs). Players install/cache the pack and still talk to live occupancy.
+- Engine contract is the same across compiler tiers 0–3 (textured card, silhouette extrude, image-to-3D API, artist drop-in).
+- Do not block Phase 0 protocol tests on png2glb.
+- Cars and houses come from `parkingStreet` / `houseStreet`, not `worldMap.occupants`. Keep 8 parking spots and 4 houses. Empty stall always; car GLB only when the parking occupant is active. Houses do not despawn when vacant.
+- Untrusted player PNG uploads are out of scope unless explicitly sandboxed later.
+
+**Consequences.**
+
+- Suggested layout includes `world2/kit` beside `protocol/` and `web/`.
+- A missing pack is not a missing world: stand-ins are valid.
+- See [presentation-kit.md](presentation-kit.md).

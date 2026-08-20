@@ -2,21 +2,25 @@
 
 Wire contract World 2 will speak. Source of truth is Agent Play (`packages/web-ui` routes + `@agent-play/sdk` types). World 2 does not extend this protocol in v1.
 
+**OpenAPI (implement against this):** [`../agent-play/docs/occupancy-v1.openapi.yaml`](../agent-play/docs/occupancy-v1.openapi.yaml) — index [`../agent-play/docs/occupancy-v1.md`](../agent-play/docs/occupancy-v1.md). Occupancy is Agent Play’s. This repo does not duplicate the YAML. GLB / png2glb packs are presentation; instance them from the snapshot this API returns.
+
 **Page origin:** `https://world2.v0peer.org` (3D SPA; no occupancy APIs)
 
-**Default API origin:** `https://world1.v0peer.org`
+**Default occupancy / API origin:** `https://agent-play.com`
 
 **API prefix:** `/api/agent-play`
 
-Default API base (no trailing slash): **`https://world1.v0peer.org/api/agent-play`**
+Default API base (no trailing slash): **`https://agent-play.com/api/agent-play`**
 
 Next also rewrites `/agent-play/*` → `/api/agent-play/*`. Prefer the `/api/agent-play` paths.
 
-Build-time override (when coding starts): e.g. `VITE_WORLD2_API_BASE`, same idea as play-ui `VITE_PLAY_API_BASE`. Never default the API base to `window.location.origin` — that is World 2, not Main World.
+Build-time override (when coding starts): e.g. `VITE_WORLD2_API_BASE`, same idea as play-ui `VITE_PLAY_API_BASE`. Never default the API base to `window.location.origin` — that is World 2 (or worldN), not Main World occupancy.
+
+Aliases of the **same** occupancy deployment: `https://www.agent-play.com`, `https://playworld.world`, and **`https://world1.v0peer.org` while it still exists**. `world1` may be discontinued once world2 / worldN clients exist. Do not treat it as canonical. `https://world2.v0peer.org` and future `worldN.v0peer.org` are never API origins and never valid `serverUrl`.
 
 ## Cross-origin (required for v1)
 
-The 3D page is a different origin from the API. Every occupancy call is CORS.
+The 3D page is a different origin from the API. Every occupancy call is CORS against **`agent-play.com`**.
 
 ### Cookies vs headers
 
@@ -43,7 +47,7 @@ new EventSource(`${API_BASE}/events?sid=${encodeURIComponent(sid)}`);
 
 play-ui documents split origin (`../agent-play/docs/play-ui.md`): the API must send CORS on the routes the UI calls. Today Main World already CORS-allows `*` on **proximity-action** and geography. As of this planning pass, **session, sdk/rpc, events, and snapshot do not**.
 
-World 2 Phase 1 needs Agent Play to add CORS (and `OPTIONS` where browsers preflight POST) on at least:
+World 2 Phase 1 needs Agent Play on **`agent-play.com`** to add CORS (and `OPTIONS` where browsers preflight POST) on at least:
 
 - `GET /api/agent-play/session`
 - `POST /api/agent-play/sdk/rpc` (and allow `Content-Type`)
@@ -66,7 +70,7 @@ CLI / SDK file (typically `~/.agent-play/credentials.json`, override `AGENT_PLAY
 
 ```json
 {
-  "serverUrl": "https://world1.v0peer.org",
+  "serverUrl": "https://agent-play.com",
   "nodeId": "<main node id>",
   "passw": "<ten-word passphrase>",
   "agentNodes": [
@@ -74,6 +78,8 @@ CLI / SDK file (typically `~/.agent-play/credentials.json`, override `AGENT_PLAY
   ]
 }
 ```
+
+New files set `serverUrl` to **`https://agent-play.com`**.
 
 `passw` is human-readable. Never send it on the wire.
 
@@ -88,7 +94,16 @@ The server compares the header to the stored hash and does not hash again.
 
 Optional `POST /api/nodes/validate` body: `{ "nodeId": "<same as header>" }`. Mismatch between body and `x-node-id` → 400.
 
-play-ui restore maps `agent-play.com` / `www.agent-play.com` / `playworld.world` onto `world1.v0peer.org`. World 2 must do the same. `world2.v0peer.org` is **not** a valid `serverUrl` for occupancy.
+**Restore canonicalization (intended policy).** Treat these hosts as the same occupancy deployment and canonicalize **to** `agent-play.com`:
+
+- `agent-play.com` (already canonical)
+- `www.agent-play.com`
+- `playworld.world`
+- `world1.v0peer.org` (disposable alias; may be discontinued)
+
+`world2.v0peer.org` and `worldN.v0peer.org` are **not** valid `serverUrl` values for occupancy. Refuse them.
+
+**Current play-ui code** still canonicalizes aliases **to** `world1.v0peer.org` and lists `agent-play.com` as a legacy name. That is leftover. World 2 implements the intended policy. Agent Play restore should flip when production host constants change. See ADR-012.
 
 ### Agent identities
 
@@ -109,9 +124,9 @@ SDK `RemotePlayWorld.connect` may send main-node headers on this GET after valid
 
 World 2 (view-only public URL):
 
-1. Load API origin (default Main World, **not** the page origin).
-2. `GET https://world1.v0peer.org/api/agent-play/session` via CORS `fetch`, `credentials: "omit"`.
-3. Store `sid` (sessionStorage). HUD shows a prefix only.
+1. Load API origin (default **`https://agent-play.com`**, **not** the page origin).
+2. `GET https://agent-play.com/api/agent-play/session` via CORS `fetch`, `credentials: "omit"`.
+3. Store `sid` (sessionStorage). HUD shows a prefix only. HUD also shows page origin vs server origin `agent-play.com`.
 4. Reconcile if a stored sid disagrees with the server (replace local copy).
 
 Do not require credentials for this path. Optional validate + node headers is Phase 2+.
@@ -150,12 +165,28 @@ Response:
       "streets": []
     },
     "spaces": [],
-    "mcpServers": []
+    "mcpServers": [],
+    "parkingStreet": {},
+    "houseStreet": {}
   }
 }
 ```
 
-`worldLayout`, `spaces`, and `mcpServers` are optional. Occupants are the spatial source of truth. There is no top-level `players` array (world map v3).
+`worldLayout`, `spaces`, `mcpServers`, `parkingStreet`, and `houseStreet` are optional at the type level but parking and houses are live product surfaces: keep them. Occupants are the spatial source of truth for agents, humans, structures, and legacy mcp. Cars and houses are **not** in `worldMap.occupants`. There is no top-level `players` array (world map v3).
+
+### Load sequence (client)
+
+Protocol tests first, then canvas:
+
+1. GET session on **agent-play.com**
+2. POST `getWorldSnapshot`
+3. Parse bounds and occupants (and layout / parking / houses when present)
+4. Ground from snapshot bounds
+5. Stand-in or kit meshes at `(x, y) → (X, 0, Z)`
+6. EventSource `/events?sid=`
+7. Merge player-chain nodes or refetch snapshot
+
+No human-move RPC. Local `__human__` pawn. See [architecture.md](architecture.md).
 
 ### Compatibility GET
 
@@ -290,7 +321,7 @@ Reads without `sid`: `getWorldSnapshot`, `getPlayerChainNode`.
 
 | Op / route | Auth | Notes |
 |------------|------|--------|
-| `GET /session` | none (view-only) | Obtain `sid`; CORS `fetch` from world2 |
+| `GET /session` | none (view-only) | Obtain `sid`; CORS `fetch` from world2 to **agent-play.com** |
 | `getWorldSnapshot` | optional | Full occupancy |
 | `GET /events?sid=` | `sid` | Live fanout via `EventSource` |
 | `getPlayerChainNode` | optional | Incremental merge |
@@ -348,7 +379,8 @@ Geography (later, not durable snapshot):
 - AQL HTTP (`/api/aql` or playground CONNECT) — AQL stays on the host UI
 - `POST /api/agents` create
 - Redis
-- Godot or web multiplayer as occupancy (`ENet`, Colyseus, engine peers)
+- Engine or web multiplayer as occupancy (`ENet`, Colyseus, engine peers)
 - Featured-arcade scoring shortcuts
 - Tool-sync / `world:structures` (removed in world map v3)
 - Occupancy APIs on `world2.v0peer.org` itself
+- Occupancy APIs on any `worldN.v0peer.org` page origin
