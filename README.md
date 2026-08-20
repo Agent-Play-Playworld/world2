@@ -50,9 +50,16 @@ A later follow-up (in Agent Play, not this repo) can add a footer or worlds nav 
 
 ## Status
 
-This repository currently holds **planning docs**. There is no `web/` app, no Three.js project, and no `npm` link to Agent Play yet.
+Planning docs plus a **cinematic landing** in `web/` (Vite + React). The landing is the default page. The live 2D game stays on [agent-play.com](https://agent-play.com). Occupancy protocol tests and the Three.js play canvas are still ahead of this marketing shell.
 
-Do not expect a “run the game” section until code exists.
+```sh
+cd web
+npm install
+npm test
+npm run dev
+```
+
+Open `http://localhost:5173`. Art stills sync from `art/refs/` (png2glb references).
 
 ## Docs
 

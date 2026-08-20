@@ -1,0 +1,9 @@
+.DS_Store
+node_modules
+dist
+web/node_modules
+web/dist
+web/public/art
+coverage
+*.log
+.vite
