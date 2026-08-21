@@ -8,9 +8,15 @@ export const PlayTouchKeySchema = z.object({
 
 export type PlayTouchKey = z.infer<typeof PlayTouchKeySchema>;
 
-export const PlayFooterMenuItemSchema = z.object({
-  id: z.enum(["debug"]),
-  label: z.string().min(1),
-});
+export const PlayPanelIdSchema = z.enum(["messages", "session", "debug"]);
 
-export type PlayFooterMenuItem = z.infer<typeof PlayFooterMenuItemSchema>;
+export type PlayPanelId = z.infer<typeof PlayPanelIdSchema>;
+
+export const PlayModalIdSchema = z.enum([
+  "games",
+  "wallet",
+  "referrals",
+  "create-node",
+]);
+
+export type PlayModalId = z.infer<typeof PlayModalIdSchema>;

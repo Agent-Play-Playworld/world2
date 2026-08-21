@@ -6,8 +6,10 @@ import {
   NOTIFICATION_TRAY_AUTO_DISMISS_MS,
   proximityActionsForNotification,
 } from "../lib/world-notification";
-import type { PlayProximityAction } from "../schemas/world-notification";
-import type { WorldNotificationPayload } from "../schemas/world-notification";
+import type {
+  PlayProximityAction,
+  WorldNotificationPayload,
+} from "../schemas/world-notification";
 
 type NotificationTrayProps = {
   notifications: readonly WorldNotificationPayload[];

@@ -9,6 +9,14 @@ export const InductionStepIdSchema = z.enum([
 
 export type InductionStepId = z.infer<typeof InductionStepIdSchema>;
 
+export const InductionBusyActionSchema = z.enum([
+  "become-citizen",
+  "restore",
+  "enter-world",
+]);
+
+export type InductionBusyAction = z.infer<typeof InductionBusyActionSchema>;
+
 export const InductionGateSchema = z.object({
   id: z.enum(["new", "return"]),
   title: z.string().min(1),

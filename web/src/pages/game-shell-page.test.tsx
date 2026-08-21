@@ -20,7 +20,7 @@ const PHRASE =
 describe("game shell page", () => {
   it("shows the full play shell after citizenship is sealed and the world is entered", async () => {
     const user = userEvent.setup();
-    const fetchFn: OccupancyFetch = vi.fn(async (input: RequestInfo | URL) => {
+    const fetchFn: OccupancyFetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url.endsWith("/session")) {
         return jsonResponse({ sid: "sid-local" });
@@ -28,7 +28,53 @@ describe("game shell page", () => {
       if (url.endsWith("/bootstrap")) {
         return jsonResponse({ rootKey: "ab".repeat(32) });
       }
+      if (url.includes("/players/") && url.includes("/wallet")) {
+        return jsonResponse({
+          wallet: {
+            playerId: "node-derived",
+            balanceUsd: 10,
+            powerUps: 0,
+            currency: "USD",
+            updatedAt: "2026-08-21T00:00:00.000Z",
+          },
+        });
+      }
       if (url.includes("/sdk/rpc") && url.includes("sid=")) {
+        const body: unknown =
+          init?.body === undefined ? {} : JSON.parse(String(init.body));
+        const op =
+          typeof body === "object" && body !== null && "op" in body
+            ? body.op
+            : undefined;
+        if (op === "createHumanNode") {
+          return jsonResponse({ nodeId: "node-derived" });
+        }
+        if (op === "getGameStats") {
+          return jsonResponse({
+            stats: {
+              dayStreak: 0,
+              bestStreak: 0,
+              puEarnedToday: 0,
+              puCapRemaining: 100,
+              gamesPlayedToday: 0,
+              featuredGameId: "daily-rotator",
+              firstGamePlayed: true,
+              perGame: {},
+            },
+          });
+        }
+        if (op === "worldChatHistory") {
+          return jsonResponse({ messages: [], hasMore: false, totalCount: 0 });
+        }
+        if (op === "worldChatPublish") {
+          return jsonResponse({ ok: true });
+        }
+        if (op === "worldChatReact") {
+          return jsonResponse({
+            ok: true,
+            reactions: { love: [], thumbs_up: [] },
+          });
+        }
         return jsonResponse({ nodeId: "node-derived" });
       }
       if (url.includes("/sdk/rpc")) {
@@ -73,7 +119,10 @@ describe("game shell page", () => {
     expect(screen.getByRole("group", { name: /play pad/i })).toHaveClass(
       "play-pad-center"
     );
-    expect(screen.getByRole("toolbar", { name: /play menu/i })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: /touch pad/i })).toHaveClass(
+      "play-touch-pad-bar"
+    );
+    expect(screen.getByRole("button", { name: /games g/i })).toBeInTheDocument();
     expect(screen.queryByRole("group", { name: /playback/i })).not.toBeInTheDocument();
   });
 });

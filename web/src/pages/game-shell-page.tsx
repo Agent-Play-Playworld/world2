@@ -41,7 +41,12 @@ export const GameShellPage = (options: GameShellPageProps = {}) => {
         occupancyOrigin={occupancyOrigin}
         sid={world.sid}
         nodeId={world.nodeId}
+        passw={world.passw}
         snapshot={world.snapshot}
+        fetchFn={options.fetchFn}
+        onCreateNewNode={() => {
+          setWorld(null);
+        }}
       />
     </main>
   );

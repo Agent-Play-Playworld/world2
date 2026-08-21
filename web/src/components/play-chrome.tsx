@@ -36,9 +36,10 @@ import {
 } from "../schemas/occupancy-play";
 import type { PlayModalId, PlayPanelId } from "../schemas/play-chrome";
 import type { GameStreakPreview, WalletPreview, WorldChatLine } from "../schemas/play-preview";
-import type {
-  PlayProximityAction,
-  WorldNotificationPayload,
+import {
+  PlayProximityActionSchema,
+  type PlayProximityAction,
+  type WorldNotificationPayload,
 } from "../schemas/world-notification";
 import { DebugRadar } from "./debug-radar";
 import { FloatingPanel } from "./floating-panel";
@@ -85,13 +86,7 @@ export const PlayChrome = (options: PlayChromeProps = {}) => {
   >([]);
   const [liveChatLine, setLiveChatLine] = useState<WorldChatLine | null>(null);
   const debugPreview = parsePlayDebugSnapshot(options.snapshot);
-
-  const pushNotification = (notification: WorldNotificationPayload): void => {
-    setNotifications((current) => [
-      notification,
-      ...current.filter((item) => item.id !== notification.id),
-    ]);
-  };
+  const nearbyAgent = debugPreview.agents[0];
 
   const activePartner =
     notifications.find(
@@ -99,17 +94,6 @@ export const PlayChrome = (options: PlayChromeProps = {}) => {
     ) ?? null;
   const targetName =
     activePartner === null ? undefined : notificationActorLabel(activePartner);
-
-  const applyProximityAction = (options: {
-    action: PlayProximityAction;
-    notification: WorldNotificationPayload;
-  }): void => {
-    if (options.action === "chat") {
-      setPanelCollapsed("messages", false);
-      return;
-    }
-    setPanelCollapsed("session", false);
-  };
 
   useEffect(() => {
     if (typeof window.matchMedia !== "function") {
@@ -275,6 +259,40 @@ export const PlayChrome = (options: PlayChromeProps = {}) => {
     setCollapsed((current) => ({ ...current, [id]: next }));
   };
 
+  const applyProximityAction = (input: {
+    action: PlayProximityAction;
+    notification: WorldNotificationPayload;
+  }): void => {
+    if (input.action === "chat") {
+      setPanelCollapsed("messages", false);
+      return;
+    }
+    setPanelCollapsed("session", false);
+  };
+
+  useEffect(() => {
+    if (nearbyAgent === undefined) {
+      return;
+    }
+    const playerId = nearbyAgent.playerId;
+    const displayName = nearbyAgent.name;
+    const nearbyId = `near-${playerId}`;
+    setNotifications((current) => {
+      if (current.some((item) => item.id === nearbyId)) {
+        return current;
+      }
+      return [
+        buildProximityInviteNotification({
+          id: nearbyId,
+          createdAt: new Date().toISOString(),
+          actorPlayerId: playerId,
+          displayName,
+        }),
+        ...current,
+      ];
+    });
+  }, [nearbyAgent?.playerId, nearbyAgent?.name]);
+
   return (
     <div className="play-chrome">
       <NotificationTray
@@ -282,6 +300,7 @@ export const PlayChrome = (options: PlayChromeProps = {}) => {
         onDismiss={(id) => {
           setNotifications((current) => current.filter((item) => item.id !== id));
         }}
+        onProximityAction={applyProximityAction}
       />
       <div className="play-hud-dock" role="group" aria-label="Wallet and arcade controls">
         <button
@@ -322,7 +341,24 @@ export const PlayChrome = (options: PlayChromeProps = {}) => {
             onClick={() => {
               if (key.id === "wallet") {
                 setOpenModal("wallet");
+                return;
               }
+              const parsed = PlayProximityActionSchema.safeParse(key.id);
+              if (!parsed.success) {
+                return;
+              }
+              const action = parsed.data;
+              const partner =
+                activePartner !== null &&
+                proximityActionsForNotification(activePartner).includes(action)
+                  ? activePartner
+                  : notifications.find((notification) =>
+                      proximityActionsForNotification(notification).includes(action)
+                    );
+              if (partner === undefined) {
+                return;
+              }
+              applyProximityAction({ action, notification: partner });
             }}
           >
             <span className="play-touch-letter">{key.letter}</span>
@@ -363,6 +399,13 @@ export const PlayChrome = (options: PlayChromeProps = {}) => {
             occupancyOrigin={occupancyOrigin}
             nodeId={options.nodeId}
             passw={options.passw}
+            targetName={targetName}
+            onProximityAction={(action) => {
+              if (activePartner === null) {
+                return;
+              }
+              applyProximityAction({ action, notification: activePartner });
+            }}
             onDownload={
               options.passw !== undefined && options.nodeId !== undefined
                 ? () => {
@@ -383,8 +426,8 @@ export const PlayChrome = (options: PlayChromeProps = {}) => {
           />
         </FloatingPanel>
         <FloatingPanel
-          label="Debug"
-          moveLabel="Move debug panel"
+          label="Game settings"
+          moveLabel="Move game settings panel"
           className="play-panel-debug"
           landmark="complementary"
           collapsed={collapsed.debug}

@@ -1316,84 +1316,6 @@ code {
   box-shadow: 0 0 10px #c8f542;
 }
 
-.play-radar-scope {
-  position: relative;
-  width: min(100%, 240px);
-  min-height: 110px;
-  aspect-ratio: 1;
-  height: auto;
-  justify-self: center;
-  overflow: hidden;
-  border-radius: 50%;
-  border: 1px solid rgba(200, 245, 66, 0.45);
-  background:
-    radial-gradient(circle, rgba(200, 245, 66, 0.08) 0 18%, transparent 19%),
-    repeating-radial-gradient(circle, transparent 0 18px, rgba(200, 245, 66, 0.12) 18px 19px),
-    #041018;
-}
-
-.play-radar-scope.is-geography {
-  box-shadow: 0 0 0 3px rgba(200, 245, 66, 0.28), inset 0 0 24px rgba(200, 245, 66, 0.18);
-}
-
-.play-radar-zones,
-.play-radar-grids {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.play-radar-scope.is-zones .play-radar-zones {
-  opacity: 1;
-  background: conic-gradient(
-    from 210deg,
-    rgba(217, 120, 98, 0.35) 0 120deg,
-    rgba(103, 232, 249, 0.28) 120deg 240deg,
-    rgba(200, 245, 66, 0.28) 240deg 360deg
-  );
-}
-
-.play-radar-scope.is-grids .play-radar-grids {
-  opacity: 1;
-  background:
-    repeating-linear-gradient(
-      0deg,
-      transparent 0 10px,
-      rgba(103, 232, 249, 0.2) 10px 11px
-    ),
-    repeating-linear-gradient(
-      90deg,
-      transparent 0 10px,
-      rgba(200, 245, 66, 0.2) 10px 11px
-    );
-}
-
-.play-radar-sweep {
-  position: absolute;
-  inset: 8%;
-  border-radius: 50%;
-  background: conic-gradient(from 0deg, transparent 0 78%, rgba(200, 245, 66, 0.45) 100%);
-  animation: play-radar-spin 4.2s linear infinite;
-}
-
-.play-radar-blip {
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  margin: -4px 0 0 -4px;
-  border-radius: 999px;
-}
-
-.play-radar-blip-agent {
-  background: #c8f542;
-  box-shadow: 0 0 10px #c8f542;
-}
-
-.play-radar-blip-structure {
-  background: #67e8f9;
-}
-
 .play-debug-roster {
   display: grid;
   gap: 6px;
@@ -1458,14 +1380,8 @@ code {
   color: #67e8f9;
 }
 
-@keyframes play-radar-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .play-radar-sweep {
+  .play-notification-card {
     animation: none;
   }
 }
@@ -1631,36 +1547,81 @@ code {
 
 .play-notification-tray {
   position: absolute;
-  top: max(72px, calc(72px + env(safe-area-inset-top, 0px)));
-  left: 50%;
-  transform: translateX(-50%);
+  right: max(12px, env(safe-area-inset-right, 0px));
+  bottom: max(96px, calc(72px + env(safe-area-inset-bottom, 0px)));
+  left: auto;
+  top: auto;
   z-index: 120;
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: min(280px, calc(100vw - 24px));
+  flex-direction: column-reverse;
+  gap: 10px;
+  width: min(320px, calc(100vw - 24px));
   pointer-events: none;
 }
 
 .play-notification-card {
   pointer-events: auto;
-  border: 1px solid var(--wood);
-  border-radius: 12px;
-  background: var(--foam);
+  position: relative;
+  overflow: hidden;
+  border: 2px solid var(--wood);
+  border-radius: 6px 18px 6px 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 250, 241, 0.98), rgba(243, 238, 228, 0.96));
   color: var(--ink);
-  padding: 10px 12px;
-  box-shadow: 0 10px 28px rgba(36, 30, 24, 0.16);
+  padding: 12px 14px 14px 16px;
+  box-shadow:
+    0 18px 40px rgba(36, 30, 24, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.75);
   min-width: 0;
   overflow-wrap: anywhere;
+  animation: play-toast-rise 280ms ease-out;
+}
+
+.play-notification-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  background: linear-gradient(180deg, var(--teal), #c8f542);
 }
 
 .play-notification-header {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 4px;
+  gap: 10px;
+  margin-bottom: 6px;
   min-width: 0;
+}
+
+.play-notification-mark {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(180deg, #1f4d4e, #163738);
+  color: #c8f542;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  box-shadow: inset 0 0 0 1px rgba(200, 245, 66, 0.28);
+}
+
+.play-notification-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.play-notification-kicker {
+  margin: 0 0 2px;
+  font-size: 0.58rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--sage);
 }
 
 .play-notification-title,
@@ -1673,9 +1634,8 @@ code {
 }
 
 .play-notification-title {
-  flex: 1;
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 0.92rem;
   font-weight: 700;
   color: var(--teal);
 }
@@ -1703,13 +1663,43 @@ code {
   color: var(--sage);
 }
 
+.play-notification-visas {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.play-notification-visa {
+  appearance: none;
+  min-height: 44px;
+  border: 1px dashed rgba(61, 111, 112, 0.55);
+  border-radius: 4px;
+  background:
+    repeating-linear-gradient(
+      -18deg,
+      rgba(61, 111, 112, 0.08) 0 8px,
+      transparent 8px 16px
+    ),
+    var(--foam);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.play-notification-visa-talk {
+  border-color: rgba(127, 29, 29, 0.45);
+}
+
 .play-notification-actions {
   display: flex;
   gap: 8px;
-  margin-top: 10px;
+  margin-top: 8px;
 }
 
-.play-notification-accept,
 .play-notification-decline {
   flex: 1;
   border: 0;
@@ -1720,14 +1710,18 @@ code {
   font-weight: 700;
   cursor: pointer;
   color: var(--foam);
-}
-
-.play-notification-accept {
-  background: var(--teal);
-}
-
-.play-notification-decline {
   background: var(--coral);
+}
+
+@keyframes play-toast-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .play-chat-title-row,
@@ -2842,6 +2836,12 @@ h2 {
     width: min(320px, calc(100vw - 20px));
     top: auto;
     bottom: calc(max(8px, env(safe-area-inset-bottom, 0px)) + 13rem);
+  }
+
+  .play-notification-tray {
+    right: 8px;
+    bottom: calc(max(8px, env(safe-area-inset-bottom, 0px)) + 11rem);
+    width: min(300px, calc(100vw - 20px));
   }
 
   .game-shell,
