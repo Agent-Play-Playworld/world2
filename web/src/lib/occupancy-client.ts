@@ -1,3 +1,17 @@
+import {
+  GET_GAME_STATS_OP,
+  OccupancyGameStatsEnvelopeSchema,
+  OccupancyPlayerWalletEnvelopeSchema,
+  OccupancyWorldChatHistorySchema,
+  OccupancyWorldChatReactResultSchema,
+  WORLD_CHAT_HISTORY_OP,
+  WORLD_CHAT_PUBLISH_OP,
+  WORLD_CHAT_REACT_OP,
+  type OccupancyGameStats,
+  type OccupancyPlayerWallet,
+  type OccupancyWorldChatHistory,
+} from "../schemas/occupancy-play";
+import type { MessageReactionKind, MessageReactions } from "../schemas/play-preview";
 import { occupancyApiBase } from "./occupancy-origin";
 
 export type OccupancyFetch = (
@@ -172,4 +186,154 @@ export const validateMainNode = async (
     ok: true,
     ...(typeof nodeKind === "string" ? { nodeKind } : {}),
   };
+};
+
+type OccupancyRpcOptions = OccupancyClientOptions & {
+  sid: string;
+  op: string;
+  payload: unknown;
+};
+
+const postOccupancyRpc = async (
+  options: OccupancyRpcOptions
+): Promise<unknown> => {
+  const response = await request(options)(
+    `${occupancyApiBase(options.origin)}/sdk/rpc?sid=${encodeURIComponent(options.sid)}`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      credentials: "omit",
+      body: JSON.stringify({
+        op: options.op,
+        payload: options.payload,
+      }),
+    }
+  );
+  const json = await readJson(response);
+  if (!response.ok) {
+    throw new Error(
+      typeof json === "string" ? json : `${options.op} failed.`
+    );
+  }
+  return json;
+};
+
+type PlayerWalletOptions = OccupancyClientOptions & {
+  playerId: string;
+  sid: string;
+};
+
+export const fetchPlayerWallet = async (
+  options: PlayerWalletOptions
+): Promise<OccupancyPlayerWallet> => {
+  const response = await request(options)(
+    `${occupancyApiBase(options.origin)}/players/${encodeURIComponent(options.playerId)}/wallet?sid=${encodeURIComponent(options.sid)}`,
+    {
+      method: "GET",
+      cache: "no-store",
+      credentials: "omit",
+    }
+  );
+  if (!response.ok) {
+    throw new Error("Could not load the player wallet.");
+  }
+  const json = await readJson(response);
+  return OccupancyPlayerWalletEnvelopeSchema.parse(json).wallet;
+};
+
+type GameStatsOptions = OccupancyClientOptions & {
+  playerId: string;
+  sid: string;
+};
+
+export const fetchGameStats = async (
+  options: GameStatsOptions
+): Promise<OccupancyGameStats> => {
+  const json = await postOccupancyRpc({
+    origin: options.origin,
+    fetchFn: options.fetchFn,
+    sid: options.sid,
+    op: GET_GAME_STATS_OP,
+    payload: { playerId: options.playerId },
+  });
+  return OccupancyGameStatsEnvelopeSchema.parse(json).stats;
+};
+
+type WorldChatHistoryOptions = OccupancyClientOptions & {
+  sid: string;
+  limit?: number;
+  beforeSeq?: number;
+};
+
+export const loadWorldChatHistory = async (
+  options: WorldChatHistoryOptions
+): Promise<OccupancyWorldChatHistory> => {
+  const json = await postOccupancyRpc({
+    origin: options.origin,
+    fetchFn: options.fetchFn,
+    sid: options.sid,
+    op: WORLD_CHAT_HISTORY_OP,
+    payload: {
+      limit: options.limit ?? 100,
+      ...(options.beforeSeq === undefined ? {} : { beforeSeq: options.beforeSeq }),
+    },
+  });
+  return OccupancyWorldChatHistorySchema.parse(json);
+};
+
+type PublishWorldChatOptions = OccupancyClientOptions & {
+  sid: string;
+  requestId: string;
+  mainNodeId: string;
+  fromPlayerId: string;
+  message: string;
+  parentRequestId?: string;
+};
+
+export const publishWorldChat = async (
+  options: PublishWorldChatOptions
+): Promise<void> => {
+  await postOccupancyRpc({
+    origin: options.origin,
+    fetchFn: options.fetchFn,
+    sid: options.sid,
+    op: WORLD_CHAT_PUBLISH_OP,
+    payload: {
+      requestId: options.requestId,
+      mainNodeId: options.mainNodeId,
+      fromPlayerId: options.fromPlayerId,
+      message: options.message,
+      ...(options.parentRequestId === undefined
+        ? {}
+        : { parentRequestId: options.parentRequestId }),
+    },
+  });
+};
+
+type ReactWorldChatOptions = OccupancyClientOptions & {
+  sid: string;
+  requestId: string;
+  mainNodeId: string;
+  fromPlayerId: string;
+  kind: MessageReactionKind;
+  action: "set" | "cancel";
+};
+
+export const reactWorldChat = async (
+  options: ReactWorldChatOptions
+): Promise<MessageReactions> => {
+  const json = await postOccupancyRpc({
+    origin: options.origin,
+    fetchFn: options.fetchFn,
+    sid: options.sid,
+    op: WORLD_CHAT_REACT_OP,
+    payload: {
+      requestId: options.requestId,
+      mainNodeId: options.mainNodeId,
+      fromPlayerId: options.fromPlayerId,
+      kind: options.kind,
+      action: options.action,
+    },
+  });
+  return OccupancyWorldChatReactResultSchema.parse(json).reactions;
 };
