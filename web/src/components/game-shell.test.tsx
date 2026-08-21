@@ -181,7 +181,7 @@ describe("Game shell", () => {
     expect(shell.querySelector(".play-chrome-top")).not.toBeNull();
   });
 
-  it("shows P2A options and an intercom address on the messages panel", async () => {
+  it("shows P2A settings and an intercom address preview on game settings", async () => {
     const user = userEvent.setup();
     renderShell(<GameShell nodeId="node-derived" />);
     const messages = screen.getByRole("region", { name: /world chat room/i });
@@ -193,16 +193,19 @@ describe("Game shell", () => {
     expect(
       within(messages).getByPlaceholderText(/say something to everyone/i)
     ).toBeEnabled();
-    await user.click(within(messages).getByRole("checkbox", { name: /p2a/i }));
-    expect(
-      within(messages).getByText(/share this intercom-address/i)
-    ).toBeInTheDocument();
-    expect(within(messages).getByDisplayValue("ap-intercom://node-derived")).toBeInTheDocument();
-    expect(within(messages).getByRole("button", { name: /^copy$/i })).toBeEnabled();
-    expect(within(messages).getByRole("link", { name: /p2a help/i })).toHaveAttribute(
+    expect(within(messages).queryByRole("checkbox", { name: /p2a/i })).not.toBeInTheDocument();
+    expect(within(messages).queryByLabelText(/intercom address/i)).not.toBeInTheDocument();
+    const settings = screen.getByRole("complementary", { name: /game settings/i });
+    await user.click(within(settings).getByRole("tab", { name: /^system$/i }));
+    expect(within(settings).getByText(/share this intercom-address/i)).toBeInTheDocument();
+    expect(within(settings).getByDisplayValue("ap-intercom://node-derived")).toBeInTheDocument();
+    expect(within(settings).getByRole("button", { name: /^copy$/i })).toBeEnabled();
+    expect(within(settings).getByRole("link", { name: /p2a help/i })).toHaveAttribute(
       "href",
       expect.stringContaining("p2a")
     );
+    expect(within(settings).queryByRole("switch", { name: /p2a/i })).not.toBeInTheDocument();
+    expect(within(settings).getByText(/p2a is on/i)).toBeInTheDocument();
   });
 
   it("lets a citizen print a line onto the world chat tape", async () => {

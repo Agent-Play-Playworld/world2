@@ -3,7 +3,9 @@ import {
   DEBUG_SETTING_TABS,
   formatDebugSwitch,
   formatGeographyMembers,
+  intercomAddressForNode,
   loadPlayDebugSettings,
+  P2A_HELP_HREF,
   savePlayDebugSettings,
   setPlayDebugSetting,
 } from "../lib/play-preview";
@@ -151,6 +153,48 @@ export const DebugRadar = (options: DebugRadarProps) => {
       ) : null}
       {tab === "system" ? (
         <div className="play-debug-tabpanel" role="tabpanel" aria-label="System">
+          <p className="play-debug-heading">P2A</p>
+          <div className="play-p2a-settings-row">
+            <p className="play-p2a-status">P2A is on</p>
+            <a
+              className="play-p2a-help"
+              href={P2A_HELP_HREF}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="P2A help"
+            >
+              ?
+            </a>
+          </div>
+          <div className="play-p2a-panel play-chat-freq">
+            <p>Share this intercom-address for peer connection and conferencing.</p>
+            <div className="play-p2a-address-row">
+              <input
+                readOnly
+                value={
+                  options.nodeId === undefined
+                    ? ""
+                    : intercomAddressForNode(options.nodeId)
+                }
+                aria-label="Intercom address"
+              />
+              <button
+                type="button"
+                className="action-control"
+                disabled={options.nodeId === undefined}
+                onClick={() => {
+                  if (options.nodeId === undefined) {
+                    return;
+                  }
+                  void navigator.clipboard?.writeText(
+                    intercomAddressForNode(options.nodeId)
+                  );
+                }}
+              >
+                Copy
+              </button>
+            </div>
+          </div>
           <p className="play-debug-bios">Occupancy {options.occupancyOrigin}</p>
           <p className="play-debug-bios">Session {options.sid ?? "none"}</p>
           <p className="play-debug-bios">

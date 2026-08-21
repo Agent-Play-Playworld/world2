@@ -75,6 +75,7 @@ export const PlayDebugSettingsSchema = z.object({
   worldGeographyEnabled: z.boolean(),
   showLayoutZones: z.boolean(),
   showFreeGrids: z.boolean(),
+  p2aEnabled: z.preprocess(() => true, z.literal(true)),
 });
 
 export type PlayDebugSettings = z.infer<typeof PlayDebugSettingsSchema>;

@@ -2,7 +2,6 @@ import { useEffect, useState, type FormEvent } from "react";
 import type { OccupancyFetch } from "../lib/occupancy-client";
 import { loadWorldChatHistory, publishWorldChat, reactWorldChat } from "../lib/occupancy-client";
 import {
-  P2A_HELP_HREF,
   WORLD_CHAT_COMPOSE_PLACEHOLDER,
   WORLD_CHAT_FLAP_WORDS,
   WORLD_CHAT_SELF_NAME,
@@ -15,7 +14,6 @@ import {
   defaultInstalledContentPacks,
   insertChatGlyph,
   installChatContentPack,
-  intercomAddressForNode,
   listeningNamesFromSnapshot,
   mergeWorldChatHistory,
   PLAZA_STICKER_PACK,
@@ -60,7 +58,6 @@ const formatTapeTime = (iso: string): string => {
 
 export const WorldChatRoom = (options: WorldChatRoomProps) => {
   const playerId = options.nodeId ?? WORLD_CHAT_SELF_NAME;
-  const [p2aEnabled, setP2aEnabled] = useState(false);
   const [draft, setDraft] = useState("");
   const [lines, setLines] = useState<readonly WorldChatLine[]>(() => [
     createStreetPreviewLine(),
@@ -77,8 +74,6 @@ export const WorldChatRoom = (options: WorldChatRoomProps) => {
   );
   const showStreetBoard = citizenLines.length === 0;
   const plazaInstalled = installedPacks.some((pack) => pack.id === PLAZA_STICKER_PACK.id);
-  const intercomAddress =
-    options.nodeId === undefined ? "" : intercomAddressForNode(options.nodeId);
 
   useEffect(() => {
     const sid = options.sid;
@@ -221,48 +216,7 @@ export const WorldChatRoom = (options: WorldChatRoomProps) => {
         <span className="play-chat-count" aria-label={`${formatCompactCount(lines.length)} world messages`}>
           {formatCompactCount(lines.length)}
         </span>
-        <label className="play-p2a-toggle">
-          <input
-            type="checkbox"
-            checked={p2aEnabled}
-            onChange={(event) => {
-              setP2aEnabled(event.target.checked);
-            }}
-          />
-          P2A
-        </label>
-        <a
-          className="play-p2a-help"
-          href={P2A_HELP_HREF}
-          target="_blank"
-          rel="noreferrer"
-          aria-label="P2A help"
-        >
-          ?
-        </a>
       </div>
-      {p2aEnabled ? (
-        <div className="play-p2a-panel play-chat-freq">
-          <p>Share this intercom-address for peer connection and conferencing.</p>
-          <div className="play-p2a-address-row">
-            <input
-              readOnly
-              value={intercomAddress}
-              aria-label="Intercom address"
-            />
-            <button
-              type="button"
-              className="action-control"
-              disabled={intercomAddress.length === 0}
-              onClick={() => {
-                void navigator.clipboard?.writeText(intercomAddress);
-              }}
-            >
-              Copy
-            </button>
-          </div>
-        </div>
-      ) : null}
       {showStreetBoard ? (
         <div className="play-chat-empty-board">
           <div className="play-chat-flaps" aria-hidden="true">

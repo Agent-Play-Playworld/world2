@@ -252,6 +252,7 @@ describe("play preview data", () => {
   it("treats debug toggles as pause-menu settings", () => {
     const off = defaultPlayDebugSettings();
     expect(formatDebugSwitch(off.worldGeographyEnabled)).toBe("Off");
+    expect(off.p2aEnabled).toBe(true);
     const on = setPlayDebugSetting({
       settings: off,
       key: "worldGeographyEnabled",
@@ -265,6 +266,13 @@ describe("play preview data", () => {
         key: "showLayoutZones",
         enabled: true,
       }).showLayoutZones
+    ).toBe(true);
+    expect(
+      setPlayDebugSetting({
+        settings: off,
+        key: "p2aEnabled",
+        enabled: false,
+      }).p2aEnabled
     ).toBe(true);
   });
 
@@ -375,5 +383,30 @@ describe("play preview data", () => {
     expect(
       loadPlayDebugSettings({ storage, nodeId: "other-node" }).worldGeographyEnabled
     ).toBe(false);
+    const migrated = loadPlayDebugSettings({
+      storage: {
+        getItem: () =>
+          JSON.stringify({
+            worldGeographyEnabled: true,
+            showLayoutZones: false,
+            showFreeGrids: false,
+          }),
+      },
+    });
+    expect(migrated.worldGeographyEnabled).toBe(true);
+    expect(migrated.p2aEnabled).toBe(true);
+    expect(
+      loadPlayDebugSettings({
+        storage: {
+          getItem: () =>
+            JSON.stringify({
+              worldGeographyEnabled: false,
+              showLayoutZones: false,
+              showFreeGrids: false,
+              p2aEnabled: false,
+            }),
+        },
+      }).p2aEnabled
+    ).toBe(true);
   });
 });

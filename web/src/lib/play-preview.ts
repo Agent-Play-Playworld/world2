@@ -423,6 +423,7 @@ export const defaultPlayDebugSettings = (): PlayDebugSettings => {
     worldGeographyEnabled: false,
     showLayoutZones: false,
     showFreeGrids: false,
+    p2aEnabled: true,
   });
 };
 
