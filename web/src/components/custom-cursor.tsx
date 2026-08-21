@@ -28,12 +28,17 @@ export const CustomCursor = () => {
 
     const onMove = (event: PointerEvent) => {
       const target = event.target;
+      const onClickable =
+        target instanceof Element &&
+        target.closest(
+          "a, button, summary, label, input, select, textarea, [role='button']"
+        ) !== null;
       const onDesign =
         target instanceof Element && target.closest("[data-design]") !== null;
       setState({
         point: { x: event.clientX, y: event.clientY },
         onDesign,
-        visible: true,
+        visible: !onClickable,
       });
     };
 

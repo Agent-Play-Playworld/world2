@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
+import { ActionButton, ActionSpinner } from "./action-button";
 import { downloadCitizenshipCredentials } from "../lib/download-credentials";
 import {
   INDUCTION_BRAND,
+  INDUCTION_BUSY_LABEL,
   INDUCTION_GATES,
   INDUCTION_NEXT,
   INDUCTION_NEXT_CHECKING,
@@ -123,6 +125,7 @@ export const CitizenshipOnboarding = (options: CitizenshipOnboardingProps) => {
         sid: sessionId,
         nodeId,
         snapshot,
+        passw: sealed?.passw,
       })
     );
   };
@@ -179,6 +182,7 @@ export const CitizenshipOnboarding = (options: CitizenshipOnboardingProps) => {
     setRestoreInspect(null);
     setRestoreHover(false);
     setError("");
+    setBusy(false);
     if (restoreInput.current !== null) {
       restoreInput.current.value = "";
     }
@@ -240,6 +244,7 @@ export const CitizenshipOnboarding = (options: CitizenshipOnboardingProps) => {
     if (file === null) {
       return;
     }
+    setBusy(true);
     try {
       const text = await readUploadedText(file);
       if (ticket !== restoreTicket.current) {
@@ -263,6 +268,10 @@ export const CitizenshipOnboarding = (options: CitizenshipOnboardingProps) => {
       setError(
         reason instanceof Error ? reason.message : "Could not read credentials.json."
       );
+    } finally {
+      if (ticket === restoreTicket.current) {
+        setBusy(false);
+      }
     }
   };
 
@@ -409,18 +418,18 @@ export const CitizenshipOnboarding = (options: CitizenshipOnboardingProps) => {
                 </span>
               </label>
               <div className="human-onboard-actions human-onboard-dock">
-                <button
-                  type="button"
-                  disabled={busy}
+                <ActionButton
+                  label="Become a citizen"
+                  pending={busy}
+                  pendingLabel={INDUCTION_BUSY_LABEL["become-citizen"]}
                   onClick={() => {
                     void onBecomeCitizen();
                   }}
-                >
-                  Become a citizen
-                </button>
+                />
                 <button
                   type="button"
-                  className="human-onboard-secondary"
+                  className="action-control human-onboard-secondary"
+                  disabled={busy}
                   onClick={() => {
                     setError("");
                     setStep("welcome");
@@ -439,13 +448,16 @@ export const CitizenshipOnboarding = (options: CitizenshipOnboardingProps) => {
                 read it here, then check it with occupancy.
               </p>
               <div
-                className={
-                  restoreHover
-                    ? "human-onboard-file-zone is-hover"
-                    : "human-onboard-file-zone"
-                }
+                className={[
+                  "human-onboard-file-zone",
+                  restoreHover ? "is-hover" : "",
+                  busy ? "is-busy" : "",
+                ]
+                  .filter((value) => value.length > 0)
+                  .join(" ")}
                 role="group"
                 aria-label="Restore papers tray"
+                aria-busy={busy}
                 onDragOver={(event) => {
                   event.preventDefault();
                   setRestoreHover(true);
@@ -466,13 +478,19 @@ export const CitizenshipOnboarding = (options: CitizenshipOnboardingProps) => {
                   type="file"
                   accept="application/json,.json"
                   aria-label="Open credentials.json"
+                  disabled={busy}
                   onChange={(event) => {
                     void onPapersChosen(pickRestoreFile(event.target.files));
                   }}
                 />
                 <label className="human-onboard-file-label" htmlFor="restore-credentials">
                   <span className="human-onboard-file-kicker">Returning citizen</span>
-                  <span className="human-onboard-file-action">Open credentials.json</span>
+                  <span className="human-onboard-file-action">
+                    {busy ? <ActionSpinner /> : null}
+                    {busy
+                      ? INDUCTION_BUSY_LABEL.restore
+                      : "Open credentials.json"}
+                  </span>
                   <span className="human-onboard-file-hint">
                     {restoreFile === null
                       ? "Or drop the file on this tray."
@@ -493,9 +511,10 @@ export const CitizenshipOnboarding = (options: CitizenshipOnboardingProps) => {
                 {restoreInspect !== null &&
                 restoreInspect.ok &&
                 error.length > 0 ? (
-                  <button
-                    type="button"
-                    disabled={busy}
+                  <ActionButton
+                    label="Try again"
+                    pending={busy}
+                    pendingLabel={INDUCTION_BUSY_LABEL.restore}
                     onClick={() => {
                       const papers = restoreInspect;
                       if (papers === null || !papers.ok) {
@@ -506,14 +525,13 @@ export const CitizenshipOnboarding = (options: CitizenshipOnboardingProps) => {
                         ticket: restoreTicket.current,
                       });
                     }}
-                  >
-                    Try again
-                  </button>
+                  />
                 ) : null}
                 {restoreFile !== null ? (
                   <button
                     type="button"
-                    className="human-onboard-secondary"
+                    className="action-control human-onboard-secondary"
+                    disabled={busy}
                     onClick={clearRestoreTray}
                   >
                     Choose a different file
@@ -521,7 +539,8 @@ export const CitizenshipOnboarding = (options: CitizenshipOnboardingProps) => {
                 ) : null}
                 <button
                   type="button"
-                  className="human-onboard-secondary"
+                  className="action-control human-onboard-secondary"
+                  disabled={busy}
                   onClick={() => {
                     clearRestoreTray();
                     setStep("welcome");
@@ -555,28 +574,29 @@ export const CitizenshipOnboarding = (options: CitizenshipOnboardingProps) => {
               </article>
               <div className="human-onboard-actions human-onboard-dock">
                 {sealed.requireBackup ? (
-                  <button type="button" onClick={onDownload}>
-                    Download credentials.json
-                  </button>
+                  <ActionButton
+                    label="Download credentials.json"
+                    disabled={busy}
+                    onClick={onDownload}
+                  />
                 ) : null}
-                <button
-                  type="button"
+                <ActionButton
+                  label="Enter world"
                   className="human-onboard-enter"
-                  disabled={busy || (sealed.requireBackup && !backupReady)}
+                  pending={busy}
+                  pendingLabel={INDUCTION_BUSY_LABEL["enter-world"]}
+                  disabled={sealed.requireBackup && !backupReady}
                   onClick={() => {
                     void onEnterWorld();
                   }}
-                >
-                  Enter world
-                </button>
+                />
                 {sealed.requireBackup ? null : (
-                  <button
-                    type="button"
+                  <ActionButton
+                    label="Download credentials.json"
                     className="human-onboard-secondary"
+                    disabled={busy}
                     onClick={onDownload}
-                  >
-                    Download credentials.json
-                  </button>
+                  />
                 )}
               </div>
             </>
