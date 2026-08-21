@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { BlankWorldCanvas } from "./blank-world-canvas";
 import { PlayChrome } from "./play-chrome";
+import type { OccupancyFetch } from "../lib/occupancy-client";
+import type { CreateOccupancyEventSource } from "../lib/occupancy-events";
 
 type GameShellProps = {
   children?: ReactNode;
@@ -8,18 +10,37 @@ type GameShellProps = {
   occupancyOrigin?: string | undefined;
   sid?: string | undefined;
   nodeId?: string | undefined;
+  passw?: string | undefined;
   snapshot?: unknown;
+  fetchFn?: OccupancyFetch | undefined;
+  createEventSource?: CreateOccupancyEventSource | undefined;
+  onCreateNewNode?: (() => void) | undefined;
 };
 
 export const GameShell = (options: GameShellProps) => {
-  const { children, hud, occupancyOrigin, sid, nodeId, snapshot } = options;
+  const {
+    children,
+    hud,
+    occupancyOrigin,
+    sid,
+    nodeId,
+    passw,
+    snapshot,
+    fetchFn,
+    createEventSource,
+    onCreateNewNode,
+  } = options;
   const resolvedHud =
     hud === undefined ? (
       <PlayChrome
         occupancyOrigin={occupancyOrigin}
         sid={sid}
         nodeId={nodeId}
+        passw={passw}
         snapshot={snapshot}
+        fetchFn={fetchFn}
+        createEventSource={createEventSource}
+        onCreateNewNode={onCreateNewNode}
       />
     ) : (
       hud
