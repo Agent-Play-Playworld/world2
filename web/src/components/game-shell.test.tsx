@@ -540,7 +540,7 @@ describe("Game shell", () => {
         />
       </MemoryRouter>
     );
-    const debug = screen.getByRole("complementary", { name: /debug/i });
+    const debug = screen.getByRole("complementary", { name: /game settings/i });
     await user.click(within(debug).getByRole("switch", { name: /world geography/i }));
     unmount();
     renderShell(
@@ -590,11 +590,49 @@ describe("Game shell", () => {
       result: { notification: like, seq: 1 },
     });
     const tray = await screen.findByRole("region", { name: /notifications/i });
+    expect(tray).toHaveClass("play-notification-toast");
     expect(tray).toHaveTextContent("New like");
     expect(tray).toHaveTextContent("hello street");
     source.emit(WORLD_PLAYER_ADDED_SSE, {
       player: { nodeId: "carol", name: "Carol" },
     });
     expect(await screen.findByText(/carol joined the room/i)).toBeInTheDocument();
+  });
+
+  it("raises a nearby toast with assist, chat, and push to talk", async () => {
+    const user = userEvent.setup();
+    renderShell(
+      <GameShell
+        occupancyOrigin="http://localhost:3000"
+        nodeId="node-derived"
+        snapshot={snapshotWithStreet}
+        createEventSource={createSilentEventSource}
+      />
+    );
+    const tray = await screen.findByRole("region", { name: /notifications/i });
+    expect(tray).toHaveClass("play-notification-toast");
+    expect(tray).toHaveTextContent("Nearby");
+    expect(tray).toHaveTextContent("Maple bot");
+    const actions = within(tray).getByRole("group", { name: /nearby actions/i });
+    const session = screen.getByRole("region", { name: /human agent interaction/i });
+    expect(within(session).getByText(/target: maple bot/i)).toBeInTheDocument();
+    expect(within(session).getByRole("button", { name: /assist action/i })).toBeEnabled();
+    await user.click(within(session).getByRole("button", { name: /move human agent/i }));
+    await waitFor(() => {
+      expect(session).toHaveAttribute("aria-expanded", "false");
+    });
+    await user.click(within(actions).getByRole("button", { name: /^assist$/i }));
+    await waitFor(() => {
+      expect(session).toHaveAttribute("aria-expanded", "true");
+    });
+    const messages = screen.getByRole("region", { name: /world chat room/i });
+    await user.click(within(messages).getByRole("button", { name: /move world chat/i }));
+    await waitFor(() => {
+      expect(messages).toHaveAttribute("aria-expanded", "false");
+    });
+    await user.click(within(actions).getByRole("button", { name: /^chat$/i }));
+    await waitFor(() => {
+      expect(messages).toHaveAttribute("aria-expanded", "true");
+    });
   });
 });

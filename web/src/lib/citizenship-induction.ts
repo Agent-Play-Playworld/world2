@@ -1,6 +1,7 @@
 import { artRefPublicPath } from "./art-reel";
 import {
   InductionGateSchema,
+  type InductionBusyAction,
   type InductionGate,
   type InductionStepId,
 } from "../schemas/citizenship-induction";
@@ -45,6 +46,12 @@ export const INDUCTION_NEXT_RESTORED =
 
 export const INDUCTION_NEXT_CHECKING =
   "Hold on. We are checking these papers.";
+
+export const INDUCTION_BUSY_LABEL: Record<InductionBusyAction, string> = {
+  "become-citizen": "Becoming a citizen",
+  restore: "Checking papers",
+  "enter-world": "Entering world",
+};
 
 export const INDUCTION_STREET_FILE: Record<InductionStepId, string> = {
   welcome: "agent-play-community-world-plaza.png",
