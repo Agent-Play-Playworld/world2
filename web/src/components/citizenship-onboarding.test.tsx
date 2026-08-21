@@ -120,6 +120,7 @@ describe("v0peer citizenship onboarding", () => {
         sid: "sid-local",
         nodeId: "node-derived",
         snapshot: { worldMap: { occupants: [] } },
+        passw: PHRASE,
       });
     });
   });
@@ -164,6 +165,7 @@ describe("v0peer citizenship onboarding", () => {
         sid: "sid-local",
         nodeId: "node-derived",
         snapshot: { worldMap: { occupants: [] } },
+        passw: PHRASE,
       });
     });
   });
@@ -210,11 +212,111 @@ describe("v0peer citizenship onboarding", () => {
     expect(
       screen.getByRole("status", { name: /what to do now/i })
     ).toHaveTextContent(/checking/i);
+    const tray = screen.getByRole("group", { name: /restore papers tray/i });
+    expect(tray).toHaveAttribute("aria-busy", "true");
+    expect(tray).toHaveTextContent(/checking papers/i);
     expect(screen.queryByText(PHRASE)).not.toBeInTheDocument();
     release();
     expect(
       await screen.findByRole("heading", { name: /citizenship sealed/i })
     ).toBeInTheDocument();
+  });
+
+  it("keeps Become a citizen loading until papers are sealed", async () => {
+    const user = userEvent.setup();
+    let release = (): void => undefined;
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const fetchFn = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/session")) {
+        return jsonResponse({ sid: "sid-local" });
+      }
+      if (url.endsWith("/bootstrap")) {
+        await held;
+        return jsonResponse({ rootKey: "ab".repeat(32) });
+      }
+      if (url.includes("/sdk/rpc") && url.includes("sid=")) {
+        return jsonResponse({ nodeId: "node-derived" });
+      }
+      return jsonResponse({ error: "unknown" }, false);
+    });
+    renderOnboarding(fetchFn);
+    await user.click(screen.getByRole("button", { name: /start citizenship/i }));
+    await user.click(
+      screen.getByRole("checkbox", { name: /i agree to issue my player id/i })
+    );
+    await user.click(screen.getByRole("button", { name: /become a citizen/i }));
+    const stamp = await screen.findByRole("button", {
+      name: /becoming a citizen/i,
+    });
+    expect(stamp).toHaveAttribute("aria-busy", "true");
+    expect(stamp).toBeDisabled();
+    release();
+    expect(
+      await screen.findByRole("heading", { name: /citizenship sealed/i })
+    ).toBeInTheDocument();
+  });
+
+  it("keeps Enter world loading until the street opens", async () => {
+    const user = userEvent.setup();
+    let release = (): void => undefined;
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const fetchFn = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/session")) {
+        return jsonResponse({ sid: "sid-local" });
+      }
+      if (url.endsWith("/nodes/validate")) {
+        return jsonResponse({ ok: true, nodeKind: "main" });
+      }
+      if (url.includes("/sdk/rpc")) {
+        await held;
+        return jsonResponse({ snapshot: { worldMap: { occupants: [] } } });
+      }
+      return jsonResponse({ error: "unknown" }, false);
+    });
+    const { onEnteredWorld } = renderOnboarding(fetchFn);
+    await user.click(
+      screen.getByRole("button", { name: /i already have credentials/i })
+    );
+    await user.upload(
+      screen.getByLabelText(/open credentials\.json/i),
+      new File(
+        [
+          JSON.stringify(
+            getMockCitizenshipCredential({
+              serverUrl: "http://localhost:3000",
+              nodeId: "node-derived",
+            })
+          ),
+        ],
+        "credentials.json",
+        { type: "application/json" }
+      )
+    );
+    expect(
+      await screen.findByRole("heading", { name: /citizenship sealed/i })
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /enter world/i }));
+    const enter = await screen.findByRole("button", {
+      name: /entering world/i,
+    });
+    expect(enter).toHaveAttribute("aria-busy", "true");
+    expect(enter).toBeDisabled();
+    expect(onEnteredWorld).not.toHaveBeenCalled();
+    release();
+    await waitFor(() => {
+      expect(onEnteredWorld).toHaveBeenCalledWith({
+        sid: "sid-local",
+        nodeId: "node-derived",
+        snapshot: { worldMap: { occupants: [] } },
+        passw: PHRASE,
+      });
+    });
   });
 
   it("rejects a broken credentials file before calling occupancy", async () => {
