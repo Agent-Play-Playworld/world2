@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -133,7 +133,7 @@ describe("notification tray", () => {
     expect(screen.queryByText(/new like/i)).not.toBeInTheDocument();
   });
 
-  it("shows accept and decline on an incoming call preview", async () => {
+  it("answers an incoming call with push to talk and still offers decline", async () => {
     vi.useRealTimers();
     const user = userEvent.setup();
     const onAccept = vi.fn();
@@ -162,6 +162,7 @@ describe("notification tray", () => {
     render(<Tray />);
     expect(screen.getByText(/incoming call/i)).toBeInTheDocument();
     expect(screen.getByText(/alex wants to talk/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^decline$/i })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /push to talk/i }));
     expect(onAccept).toHaveBeenCalledWith(invite);
     expect(screen.queryByText(/incoming call/i)).not.toBeInTheDocument();

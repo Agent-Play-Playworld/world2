@@ -158,7 +158,7 @@ describe("Game shell", () => {
       within(shell).getByRole("region", { name: /human agent interaction/i })
     ).toBeInTheDocument();
     expect(
-      within(shell).getByRole("complementary", { name: /debug/i })
+      within(shell).getByRole("complementary", { name: /game settings/i })
     ).toBeInTheDocument();
     expect(within(shell).getByRole("group", { name: /play pad/i })).toHaveClass(
       "play-pad-center"
@@ -342,9 +342,10 @@ describe("Game shell", () => {
         snapshot={snapshotWithStreet}
       />
     );
-    const debug = screen.getByRole("complementary", { name: /debug/i });
+    const debug = screen.getByRole("complementary", { name: /game settings/i });
     expect(debug.querySelector(".play-debug-cabinet")).not.toBeNull();
-    expect(within(debug).getByRole("tablist", { name: /debug settings/i })).toBeInTheDocument();
+    expect(debug.querySelector(".play-radar-scope")).toBeNull();
+    expect(within(debug).getByRole("tablist", { name: /game settings/i })).toBeInTheDocument();
     expect(within(debug).getByRole("switch", { name: /world geography/i })).toHaveAttribute(
       "aria-checked",
       "false"
@@ -361,7 +362,7 @@ describe("Game shell", () => {
     renderShell(
       <GameShell occupancyOrigin="http://localhost:3000" snapshot={snapshotWithStreet} />
     );
-    const debug = screen.getByRole("complementary", { name: /debug/i });
+    const debug = screen.getByRole("complementary", { name: /game settings/i });
     expect(within(debug).queryByText(/members 1\/100/i)).not.toBeInTheDocument();
     await user.click(within(debug).getByRole("switch", { name: /world geography/i }));
     expect(within(debug).getByText(/members 1\/100/i)).toBeInTheDocument();
@@ -370,7 +371,11 @@ describe("Game shell", () => {
       "true"
     );
     await user.click(within(debug).getByRole("switch", { name: /world layout zones/i }));
-    expect(debug.querySelector(".play-radar-scope")).toHaveClass("is-geography", "is-zones");
+    expect(debug.querySelector(".play-radar-scope")).toBeNull();
+    expect(within(debug).getByRole("switch", { name: /world layout zones/i })).toHaveAttribute(
+      "aria-checked",
+      "true"
+    );
   });
 
   it("collapses a panel on a title click and keeps compact panels closed until opened", async () => {
@@ -547,7 +552,7 @@ describe("Game shell", () => {
       />
     );
     expect(
-      within(screen.getByRole("complementary", { name: /debug/i })).getByRole(
+      within(screen.getByRole("complementary", { name: /game settings/i })).getByRole(
         "switch",
         { name: /world geography/i }
       )
