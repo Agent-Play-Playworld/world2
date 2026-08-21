@@ -23,8 +23,11 @@ import {
   walletPreviewFromOccupancy,
 } from "../lib/play-preview";
 import {
+  buildProximityInviteNotification,
   ingestIntercomNotificationResult,
   ingestRoomJoinNotification,
+  notificationActorLabel,
+  proximityActionsForNotification,
 } from "../lib/world-notification";
 import {
   WORLD_INTERCOM_SSE,
@@ -33,7 +36,10 @@ import {
 } from "../schemas/occupancy-play";
 import type { PlayModalId, PlayPanelId } from "../schemas/play-chrome";
 import type { GameStreakPreview, WalletPreview, WorldChatLine } from "../schemas/play-preview";
-import type { WorldNotificationPayload } from "../schemas/world-notification";
+import type {
+  PlayProximityAction,
+  WorldNotificationPayload,
+} from "../schemas/world-notification";
 import { DebugRadar } from "./debug-radar";
 import { FloatingPanel } from "./floating-panel";
 import { NotificationTray } from "./notification-tray";
@@ -79,6 +85,31 @@ export const PlayChrome = (options: PlayChromeProps = {}) => {
   >([]);
   const [liveChatLine, setLiveChatLine] = useState<WorldChatLine | null>(null);
   const debugPreview = parsePlayDebugSnapshot(options.snapshot);
+
+  const pushNotification = (notification: WorldNotificationPayload): void => {
+    setNotifications((current) => [
+      notification,
+      ...current.filter((item) => item.id !== notification.id),
+    ]);
+  };
+
+  const activePartner =
+    notifications.find(
+      (notification) => proximityActionsForNotification(notification).length > 0
+    ) ?? null;
+  const targetName =
+    activePartner === null ? undefined : notificationActorLabel(activePartner);
+
+  const applyProximityAction = (options: {
+    action: PlayProximityAction;
+    notification: WorldNotificationPayload;
+  }): void => {
+    if (options.action === "chat") {
+      setPanelCollapsed("messages", false);
+      return;
+    }
+    setPanelCollapsed("session", false);
+  };
 
   useEffect(() => {
     if (typeof window.matchMedia !== "function") {

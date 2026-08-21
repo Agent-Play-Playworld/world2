@@ -1,7 +1,6 @@
 import { useState } from "react";
 import {
   DEBUG_SETTING_TABS,
-  debugRadarScopeClass,
   formatDebugSwitch,
   formatGeographyMembers,
   loadPlayDebugSettings,
@@ -19,10 +18,6 @@ type DebugRadarProps = {
   sid?: string | undefined;
   nodeId?: string | undefined;
   preview: PlayDebugPreview;
-};
-
-const radarPercent = (value: number): number => {
-  return Math.min(92, Math.max(8, (value / 20) * 100));
 };
 
 const SettingSwitch = (options: {
@@ -73,8 +68,8 @@ export const DebugRadar = (options: DebugRadarProps) => {
 
   return (
     <div className="play-debug-radar play-debug-cabinet">
-      <p className="play-debug-kicker">Paused · Options</p>
-      <div className="play-debug-tabs" role="tablist" aria-label="Debug settings">
+      <p className="play-debug-kicker">Game settings</p>
+      <div className="play-debug-tabs" role="tablist" aria-label="Game settings">
         {DEBUG_SETTING_TABS.map((id) => (
           <button
             key={id}
@@ -92,33 +87,6 @@ export const DebugRadar = (options: DebugRadarProps) => {
       </div>
       {tab === "world" ? (
         <div className="play-debug-tabpanel" role="tabpanel" aria-label="World">
-          <div className={debugRadarScopeClass(settings)} aria-hidden="true">
-            <span className="play-radar-sweep" />
-            <span className="play-radar-zones" />
-            <span className="play-radar-grids" />
-            {options.preview.agents.map((agent) => (
-              <span
-                key={agent.playerId}
-                className="play-radar-blip play-radar-blip-agent"
-                style={{
-                  left: `${String(radarPercent(agent.worldX))}%`,
-                  top: `${String(radarPercent(agent.worldY))}%`,
-                }}
-                title={agent.name}
-              />
-            ))}
-            {options.preview.structures.map((structure) => (
-              <span
-                key={structure.id}
-                className="play-radar-blip play-radar-blip-structure"
-                style={{
-                  left: `${String(radarPercent(structure.x))}%`,
-                  top: `${String(radarPercent(structure.y))}%`,
-                }}
-                title={structure.id}
-              />
-            ))}
-          </div>
           <p className="play-debug-heading">World geography</p>
           <SettingSwitch
             label="Enable world geography: view other players in your world"

@@ -1,17 +1,22 @@
+import { formatSessionTarget } from "../lib/world-notification";
+import type { PlayProximityAction } from "../schemas/world-notification";
 import { ActionButton } from "./action-button";
 
 type SessionBoothProps = {
   occupancyOrigin: string;
   nodeId?: string | undefined;
   passw?: string | undefined;
+  targetName?: string | undefined;
   onDownload?: (() => void) | undefined;
   onInvite: () => void;
   onCreateNode: () => void;
+  onProximityAction?: (action: PlayProximityAction) => void;
 };
 
 export const SessionBooth = (options: SessionBoothProps) => {
   const nodeId = options.nodeId ?? "—";
   const mrz = `W2CITIZEN<<${nodeId.replace(/[^A-Z0-9]/gi, "/").toUpperCase()}`;
+  const hasTarget = (options.targetName?.trim().length ?? 0) > 0;
   return (
     <div className="play-session-booth">
       <div className="play-passport">
@@ -27,19 +32,44 @@ export const SessionBooth = (options: SessionBoothProps) => {
         </p>
         <p className="play-passport-mrz">{mrz}</p>
       </div>
-      <p className="play-session-target">Target: (none)</p>
+      <p className="play-session-target">{formatSessionTarget(options.targetName)}</p>
       <div className="play-visa-row" role="group" aria-label="Proximity visas">
-        <button type="button" className="play-visa" disabled>
+        <button
+          type="button"
+          className="play-visa"
+          disabled={!hasTarget}
+          onClick={() => {
+            options.onProximityAction?.("assist");
+          }}
+        >
           Assist Action
         </button>
-        <button type="button" className="play-visa" disabled>
+        <button
+          type="button"
+          className="play-visa"
+          disabled={!hasTarget}
+          onClick={() => {
+            options.onProximityAction?.("chat");
+          }}
+        >
           Chat Action
         </button>
-        <button type="button" className="play-visa play-visa-talk" disabled>
+        <button
+          type="button"
+          className="play-visa play-visa-talk"
+          disabled={!hasTarget}
+          onClick={() => {
+            options.onProximityAction?.("talk");
+          }}
+        >
           Push to Talk
         </button>
       </div>
-      <p className="play-session-hint">Walk to an agent to stamp a visa and start assist, chat, or talk.</p>
+      <p className="play-session-hint">
+        {hasTarget
+          ? "Stamp a visa to assist, chat, or talk."
+          : "Walk to an agent to stamp a visa and start assist, chat, or talk."}
+      </p>
       <div className="play-node-actions">
         {options.passw !== undefined && options.nodeId !== undefined && options.onDownload !== undefined ? (
           <ActionButton label="Download credentials" onClick={options.onDownload} />
